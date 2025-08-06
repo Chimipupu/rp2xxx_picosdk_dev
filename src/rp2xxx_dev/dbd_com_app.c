@@ -51,24 +51,24 @@ static uint8_t s_available_tim_cnt = TIMER_MAX_ALARMS;      // 利用可能な�
 
 // コマンドテーブル
 const dbg_cmd_info_t g_cmd_tbl[] = {
-//  | コマンド文字列 | コマンド種類 | 説明 | 最小引数数 | 最大引数数 |
-    {"help",    CMD_HELP,       &cmd_help,        "Show this help message", 0, 0},
-    {"cls",     CMD_CLS,        &cmd_cls,         "Display Clear", 0, 0},
-    {"sys",     CMD_SYSTEM,     &cmd_system,      "Show system information", 0, 0},
-    {"rst",     CMD_RST,        &cmd_rst,         "Reboot", 0, 0},
-    {"memd",    CMD_MEM_DUMP,   &cmd_mem_dump,    "Memory Dump Command. args -> (#address, length)", 2, 2},
-    {"reg",     CMD_REG,        &cmd_reg,         "Register read/write: reg #addr r|w bits [#val]", 3, 4},
-    {"i2c",     CMD_I2C,        &cmd_i2c,         "I2C control (port, command)", 2, 2},
-    {"gpio",    CMD_GPIO,       &cmd_gpio,        "Control GPIO pin (pin, value)", 2, 2},
-    {"px",      CMD_NEOPIXEL,   &cmd_neopixel,    "Control NeoPixel (command, args)", 1, 2},
-    {"tm",      CMD_TIMER,      &cmd_timer,       "Set timer alarm (seconds)", 0, 1},
-    {"rtc",     CMD_RTC,        &cmd_rtc,         "RTC Cmd (RP2040 ... H/W RTC, RP2350 ... AON Timer)", 0, 1},
+//  | 文字列 | 種類 | コールバック関数 | 最小引数 | 最大引数 | 説明 |
+    {"help",    CMD_HELP,       &cmd_help,        0,    0,    "Command All Show"},
+    {"cls",     CMD_CLS,        &cmd_cls,         0,    0,    "Display Clear"},
+    {"sys",     CMD_SYSTEM,     &cmd_system,      0,    0,    "Show System Information"},
+    {"rst",     CMD_RST,        &cmd_rst,         0,    0,    "S/W Reset"},
+    {"memd",    CMD_MEM_DUMP,   &cmd_mem_dump,    2,    2,    "Memory Dump Command. args -> (#address, length)"},
+    {"reg",     CMD_REG,        &cmd_reg,         3,    4,    "Register R/W Command. reg #addr r|w bits [#val]"},
+    {"i2c",     CMD_I2C,        &cmd_i2c,         2,    2,    "I2C control (port, command)"},
+    {"gpio",    CMD_GPIO,       &cmd_gpio,        2,    2,    "Control GPIO pin (pin, value)"},
+    {"px",      CMD_NEOPIXEL,   &cmd_neopixel,    1,    2,    "Control NeoPixel (command, args)"},
+    {"tm",      CMD_TIMER,      &cmd_timer,       0,    1,    "Set timer alarm (seconds)"},
+    {"rtc",     CMD_RTC,        &cmd_rtc,         0,    1,    "RTC Cmd (RP2040 ... H/W RTC, RP2350 ... AON Timer)"},
 #if defined(MCU_RP2350)
-    {"rnd",     CMD_RND,        &cmd_rnd,         "Generate true random numbers using TRNG", 0, 1},
-    {"sha",     CMD_SHA,        &cmd_sha,         "Calc SHA-256 Hash using H/W Accelerator", 0, 1},
+    {"rnd",     CMD_RND,        &cmd_rnd,         0,    1,    "Generate true random numbers using TRNG"},
+    {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash using H/W Accelerator"},
 #endif
-    {"mt",      CMD_MT_TEST,    &cmd_mt_test,     "Math test", 0, 0},
-    {"mct",     CMD_MCT,        &cmd_mct_test,    "Multi Core test", 0, 0},
+    {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math test"},
+    {"mct",     CMD_MCT,        &cmd_mct_test,    0,    0,    "Multi Core test"},
 };
 
 // コマンドテーブルのコマンド数(const)
