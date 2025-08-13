@@ -28,10 +28,7 @@ static void move_cursor_right(void);
 static void insert_char_at_cursor(char c);
 static void delete_char_at_cursor(void);
 static void backspace_at_cursor(void);
-// static void redraw_command_line(void);
 static void clear_command_line(void);
-// static void overwrite_char_at_cursor(char c);
-
 static int32_t split_str(char* p_str, dbg_cmd_args_t *p_args);
 
 // コマンドバッファ
@@ -62,33 +59,6 @@ static void move_cursor_right(void)
         s_cursor_pos++;
     }
 }
-
-#if 0
-/**
- * @brief カーソル位置の文字を書き換え（上書きモード）
- * 
- * @param c 書き換える文字
- */
-static void overwrite_char_at_cursor(char c)
-{
-    // カーソル位置の文字を上書き
-    s_cmd_buffer[s_cursor_pos] = c;
-
-    // バッファの末尾を超える場合は文字列長を更新
-    if (s_cursor_pos >= s_cmd_index) {
-        s_cmd_index = s_cursor_pos + 1;
-        // バッファサイズチェック
-        if (s_cmd_index >= DBG_CMD_MAX_LEN) {
-            s_cmd_index = DBG_CMD_MAX_LEN - 1;
-            return;
-        }
-    }
-
-    // 文字を表示してカーソルを進める
-    printf("%c", c);
-    s_cursor_pos++;
-}
-#endif
 
 /**
  * @brief カーソル位置の文字を書き換え（上書きモード）
@@ -170,27 +140,6 @@ static void backspace_at_cursor(void)
         }
     }
 }
-
-#if 0
-/**
- * @brief コマンドラインを再描画
- */
-static void redraw_command_line(void)
-{
-    // 現在の行をクリア
-    printf("\r> ");
-
-    // コマンドバッファを表示
-    for (int32_t i = 0; i < s_cmd_index; i++) {
-        printf("%c", s_cmd_buffer[i]);
-    }
-
-    // カーソルを正しい位置に移動
-    for (int32_t i = s_cursor_pos; i < s_cmd_index; i++) {
-        printf("\b");
-    }
-}
-#endif
 
 /**
  * @brief コマンドラインをクリア

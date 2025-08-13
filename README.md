@@ -44,17 +44,17 @@
 
 ## S/W
 
-- Pico SDK ... Ver2.1.1
+- [Pico SDK](https://github.com/raspberrypi/pico-sdk)🔗 ... [Ver2.2.0](https://github.com/raspberrypi/pico-sdk/releases/tag/2.2.0)🔗
   - コンパイラ
-  - gcc
-    - コンパイルオプション設定
-      - 最適化
-        - `-O0` (最適化なし)
-        - `-O3` (最適化最大)
-        - `-Os` (サイズ優先)
-        - `-Og` (デバッグ)
-      - 浮動小数点(※RP2350がマイコンのとき)
-        - `-mfloat-abi=hard` H/Wの倍精度FPU
+    - gcc
+  - コンパイルオプション
+    - 最適化
+      - `-O0` (最適化なし)
+      - `-O3` (最適化最大)
+      - `-Os` (サイズ優先)
+      - `-Og` (デバッグ)
+    - 浮動小数点(※RP2350がマイコンのとき)
+      - `-mfloat-abi=hard` H/Wの倍精度FPU
   - 標準出力: USB CDC経由でprintf()
   - リンクライブラリ
     - pico_stdlib

@@ -1,7 +1,7 @@
 /**
  * @file app_main.c
  * @author Chimipupu(https://github.com/Chimipupu)
- * @brief 数学アプリヘッダ
+ * @brief アプリメイン
  * @version 0.1
  * @date 2025-06-13
  * 

@@ -33,4 +33,5 @@ void core_0_main(void);
 void core_1_main(void);
 void i2c_slave_scan(uint8_t i2c_port);
 void proc_exec_time(void (*p_func)(void), const char* p_func_name, ...);
+
 #endif // APP_MAIN_H
