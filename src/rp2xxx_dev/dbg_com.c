@@ -28,9 +28,9 @@ static void move_cursor_right(void);
 static void insert_char_at_cursor(char c);
 static void delete_char_at_cursor(void);
 static void backspace_at_cursor(void);
-static void redraw_command_line(void);
+// static void redraw_command_line(void);
 static void clear_command_line(void);
-static void overwrite_char_at_cursor(char c);
+// static void overwrite_char_at_cursor(char c);
 
 static int32_t split_str(char* p_str, dbg_cmd_args_t *p_args);
 
@@ -63,6 +63,7 @@ static void move_cursor_right(void)
     }
 }
 
+#if 0
 /**
  * @brief カーソル位置の文字を書き換え（上書きモード）
  * 
@@ -87,6 +88,7 @@ static void overwrite_char_at_cursor(char c)
     printf("%c", c);
     s_cursor_pos++;
 }
+#endif
 
 /**
  * @brief カーソル位置の文字を書き換え（上書きモード）
@@ -169,6 +171,7 @@ static void backspace_at_cursor(void)
     }
 }
 
+#if 0
 /**
  * @brief コマンドラインを再描画
  */
@@ -187,6 +190,7 @@ static void redraw_command_line(void)
         printf("\b");
     }
 }
+#endif
 
 /**
  * @brief コマンドラインをクリア
