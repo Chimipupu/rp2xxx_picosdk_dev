@@ -54,21 +54,22 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
 //  | 文字列 | 種類 | コールバック関数 | 最小引数 | 最大引数 | 説明 |
     {"help",    CMD_HELP,       &cmd_help,        0,    0,    "Command All Show"},
     {"cls",     CMD_CLS,        &cmd_cls,         0,    0,    "Display Clear"},
-    {"sys",     CMD_SYSTEM,     &cmd_system,      0,    0,    "Show System Information"},
+    {"sys",     CMD_SYSTEM,     &cmd_system,      0,    0,    "Show System Info"},
     {"rst",     CMD_RST,        &cmd_rst,         0,    0,    "S/W Reset"},
-    {"memd",    CMD_MEM_DUMP,   &cmd_mem_dump,    2,    2,    "Memory Dump Command. args -> (#address, length)"},
-    {"reg",     CMD_REG,        &cmd_reg,         3,    4,    "Register R/W Command. reg #addr r|w bits [#val]"},
-    {"i2c",     CMD_I2C,        &cmd_i2c,         2,    2,    "I2C control (port, command)"},
-    {"gpio",    CMD_GPIO,       &cmd_gpio,        2,    2,    "Control GPIO pin (pin, value)"},
-    {"px",      CMD_NEOPIXEL,   &cmd_neopixel,    1,    2,    "Control NeoPixel (command, args)"},
-    {"tm",      CMD_TIMER,      &cmd_timer,       0,    1,    "Set timer alarm (seconds)"},
-    {"rtc",     CMD_RTC,        &cmd_rtc,         0,    1,    "RTC Cmd (RP2040 ... H/W RTC, RP2350 ... AON Timer)"},
+    {"memd",    CMD_MEM_DUMP,   &cmd_mem_dump,    2,    2,    "Memory Dump. exp(memd #4byteHexAddr #length)"},
+    {"reg",     CMD_REG,        &cmd_reg,         3,    4,    "Register R/W. exp(reg #addr r|w bits #val)"},
+    {"i2c",     CMD_I2C,        &cmd_i2c,         2,    2,    "I2C Control. exp(i2c port, command)"},
+    {"gpio",    CMD_GPIO,       &cmd_gpio,        2,    2,    "GPIO Control. exp(pin pin, value)"},
+    {"px",      CMD_NEOPIXEL,   &cmd_neopixel,    1,    2,    "NeoPixel Control. exp(px command, args)"},
+    {"tm",      CMD_TIMER,      &cmd_timer,       0,    1,    "Set timer alarm. exp(tm seconds)"},
+    //  RTC ... (RP2040 = H/W RTC, RP2350 = AON Timer)
+    {"rtc",     CMD_RTC,        &cmd_rtc,         0,    1,    "RTC. exp(rtc g | rtc s YYYY/MM/DD HH:MM:SS)"},
 #if defined(MCU_RP2350)
-    {"rnd",     CMD_RND,        &cmd_rnd,         0,    1,    "Generate true random numbers using TRNG"},
-    {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash using H/W Accelerator"},
+    {"rnd",     CMD_RND,        &cmd_rnd,         0,    1,    "Generate Random Number, using H/W TRNG"},
+    {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
-    {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math test"},
-    {"mct",     CMD_MCT,        &cmd_mct_test,    0,    0,    "Multi Core test"},
+    {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math Calc Test"},
+    {"mct",     CMD_MCT,        &cmd_mct_test,    0,    0,    "Multi Core Test"},
 };
 
 // コマンドテーブルのコマンド数(const)
@@ -98,14 +99,19 @@ static int64_t timer_callback(alarm_id_t id, void *user_data)
 
 static void dbg_com_init_msg(dbg_cmd_args_t *p_args)
 {
-    printf("\nDebug Command Monitor for %s Ver%d.%d.%d\n",MCU_NAME,
-                                                        FW_VERSION_MAJOR,
-                                                        FW_VERSION_MINOR,
-                                                        FW_VERSION_REVISION);
-    printf("Copyright (c) 2025 Chimipupu All Rights Reserved.\n");
-    printf("Type 'help' for available commands\n");
+    printf(ANSI_ESC_PG_RED
+            "\nDebug Command Monitor for %s Ver%d.%d.%d\n",
+            MCU_NAME, FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_REVISION);
+
+    printf("Copyright (c) 2025 Chimipupu All Rights Reserved.\n"
+            ANSI_ESC_PG_RESET);
+
+    // printf("Type 'help' for available commands\n");
+
 #ifdef _WDT_ENABLE_
-    printf("[INFO] Wanning! WDT Enabled: %dms\n", _WDT_OVF_TIME_MS_);
+    printf(ANSI_ESC_PG_YELLOW
+            "[INFO] Wanning! WDT Enabled : %d ms OVF!\n" ANSI_ESC_PG_GREEN,
+            _WDT_OVF_TIME_MS_);
 #endif // _WDT_ENABLE_
 }
 
@@ -168,6 +174,7 @@ static void cmd_system(dbg_cmd_args_t *p_args)
 
     // クロック関連
     printf("\n[Clock Info]\n");
+
 #if 0
     uint32_t clk_gp0, clk_gp1, clk_gp2, clk_gp3;
     clk_gp0 = clock_get_hz(clk_gpout0) / 1000000;
@@ -179,6 +186,7 @@ static void cmd_system(dbg_cmd_args_t *p_args)
     printf("CLK_GPOUT2 : %d MHz\n", clk_gp2);
     printf("CLK_GPOUT3 : %d MHz\n", clk_gp3);
 #endif
+
     ref_clock = clock_get_hz(clk_ref) / 1000000;
     sys_clock = clock_get_hz(clk_sys) / 1000000;
     usb_clock = clock_get_hz(clk_usb) / 1000000;

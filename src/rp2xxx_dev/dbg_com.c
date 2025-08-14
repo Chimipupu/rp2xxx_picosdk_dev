@@ -9,11 +9,6 @@
  * 
  */
 #include "dbg_com.h"
-#include "ansi_esc.h"
-
-#define KEY_LEFT    'D'    // 左矢印キー（ESC[D）
-#define KEY_RIGHT   'C'    // 右矢印キー（ESC[C）
-#define KEY_DELETE  0x7F   // Deleteキー
 
 // コマンド履歴
 static char s_cmd_history[CMD_HISTORY_MAX][DBG_CMD_MAX_LEN];
@@ -150,7 +145,6 @@ static void clear_command_line(void)
     while (s_cmd_index > 0) {
         printf("\b \b");
         s_cmd_index--;
-        WDT_RST();
     }
     s_cursor_pos = 0;
 }
@@ -194,7 +188,6 @@ static int32_t split_str(char* p_str, dbg_cmd_args_t *p_args)
         printf("[DEBUG] : Next token = '%s'\n", p_token);
 #endif // DEBUG_DBG_COM
         p_args->p_argv[p_args->argc++] = p_token;
-        WDT_RST();
     }
 
 #ifdef DEBUG_DBG_COM
@@ -283,7 +276,7 @@ void dbg_com_init(void)
 {
     s_cmd_index = 0;
     s_cursor_pos = 0;
-    printf(ANSI_ESC_CLS);
+    printf(ANSI_ESC_CLEAR_ALL    ANSI_ESC_PG_GREEN);
     cmd_help(NULL);
 }
 

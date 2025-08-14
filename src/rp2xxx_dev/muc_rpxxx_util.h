@@ -55,7 +55,7 @@
 #define REG_BIT_CHK(reg, bit)               ((reg) &   (1UL << (bit))) // レジスタのビットチェック
 
 // NOP
-__attribute__( ( always_inline ) ) static inline void NOP(void)
+__attribute__( ( always_inline ) ) static inline void _NOP(void)
 {
     __asm__ __volatile__("nop");
 }
@@ -73,12 +73,13 @@ __attribute__( ( always_inline ) ) static inline void _EI(void)
 }
 
 // WDTをなでるマクロ
-static inline void WDT_RST(void)
+__attribute__( ( always_inline ) ) static inline void _WDT_CNT_RST(void)
 {
 #ifdef _WDT_ENABLE_
-    watchdog_update();
+    // WDTのcntを0にしてなでる
+    watchdog_hw->load = 0;
 #else
-    NOP();
+    _NOP;
 #endif // _WDT_ENABLE_
 }
 

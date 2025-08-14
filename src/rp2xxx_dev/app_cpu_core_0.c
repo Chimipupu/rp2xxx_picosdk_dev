@@ -32,7 +32,7 @@ static void app_multicore_state_machine(uint32_t state)
                 break;
 
             default:
-                NOP();NOP();NOP();
+                _NOP;_NOP;_NOP;
                 break;
         }
 }
@@ -62,6 +62,6 @@ void app_core_0_main(void)
             sleep_ms(1);
         }
 #endif
-        WDT_RST;
+        _WDT_CNT_RST();
     }
 }

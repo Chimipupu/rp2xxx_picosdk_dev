@@ -107,7 +107,7 @@ void btn_ex_irq_handler(uint gpio, uint32_t event_mask)
  */
 int64_t alarm_callback(alarm_id_t id, void *p_user_data)
 {
-    NOP();
+    _NOP;
 
     return 0;
 }
@@ -115,7 +115,7 @@ int64_t alarm_callback(alarm_id_t id, void *p_user_data)
 
 static void hw_clock_init(void)
 {
-    NOP();
+    _NOP;
 }
 
 static void hw_gpio_init(void)
@@ -184,7 +184,7 @@ static void hw_interp_init(void)
 
 static void hw_pwm_init(void)
 {
-    NOP();
+    _NOP;
 }
 
 static void hw_i2c_init(void)
@@ -309,7 +309,7 @@ static void hw_wdt_init(void)
     }
 
     watchdog_enable(_WDT_OVF_TIME_MS_, 1);
-    WDT_RST();
+    _WDT_CNT_RST();
 #endif
 }
 
@@ -382,13 +382,11 @@ int main()
     // タイマー初期化
     hw_timer_init();
 
-#ifdef _WDT_ENABLE_
     // WDT初期化
     hw_wdt_init();
-#endif // _WDT_ENABLE_
 
-    printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
-    printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
+    // printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
+    // printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
 
     s_core_num = get_core_num();
 

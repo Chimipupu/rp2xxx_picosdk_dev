@@ -73,7 +73,10 @@
         "adc.h": "c",
         "pcb_def.h": "c",
         "muc_rpxxx_util.h": "c",
-        "aon_timer.h": "c"
+        "aon_timer.h": "c",
+        "gpio.h": "c",
+        "string.h": "c",
+        "cstdlib": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

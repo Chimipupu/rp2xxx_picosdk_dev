@@ -175,9 +175,10 @@
 // #define TIMER_ALARM_IRQ_ENABLE
 
 // [WDT関連]
-// #define _WDT_ENABLE_                             // WDT有効マクロ
+#define _WDT_ENABLE_                                // WDT有効マクロ
+
 #ifdef _WDT_ENABLE_
-    #define _WDT_OVF_TIME_MS_ 3000                      // WDTが鳴く時間(ms)
+#define _WDT_OVF_TIME_MS_ 6000                      // WDTが鳴く時間(ms)
 #endif // _WDT_ENABLE_
 
 // [I2C関連]

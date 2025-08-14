@@ -46,6 +46,6 @@ void app_core_1_main(void)
     while(1)
     {
         dbg_com_main();
-        WDT_RST();
+        _WDT_CNT_RST();
     }
 }

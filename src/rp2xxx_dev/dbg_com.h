@@ -11,15 +11,14 @@
 #ifndef DBG_COM_H
 #define DBG_COM_H
 
+// C/C++ Std Include
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include "muc_rpxxx_util.h"
-#include "pcb_def.h"
-
+// SDK Include
 #include "pico/version.h"
 #include "hardware/clocks.h"
 #include "hardware/watchdog.h"
@@ -27,6 +26,12 @@
 #include "pico/time.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+
+// My APP Include
+#include "muc_rpxxx_util.h"
+#include "pcb_def.h"
+#include "ascii_code.h"
+#include "ansi_esc.h"
 
 // #define DEBUG_DBG_COM      // デバッグ用
 
@@ -45,19 +50,22 @@
 #endif
 
 // 期待値: tan(355/226)
-#define TAN_355_226_EXPECTED -7497258.18532
+#define TAN_355_226_EXPECTED    -7497258.18532
 
 // [タイマー関連定義]
-#define TIMER_MAX_SECONDS 3600   // 最大1時間
+#define TIMER_MAX_SECONDS       3600   // 最大1時間
 // タイマーの最大アラーム数
-#define TIMER_MAX_ALARMS      PICO_TIME_DEFAULT_ALARM_POOL_MAX_TIMERS
+#define TIMER_MAX_ALARMS        PICO_TIME_DEFAULT_ALARM_POOL_MAX_TIMERS
 
 // [キーボード関連定義]
-#define KEY_ESC         27    // ESCキー
-#define KEY_BACKSPACE   127   // バックスペースキー
-#define KEY_ANSI_ESC    '['   // ANSIエスケープシーケンス
-#define KEY_UP          'A'   // 十字キーの矢印上
-#define KEY_DOWN        'B'   // 十字キーの矢印下
+#define KEY_ESC                 27    // ESCキー
+#define KEY_BACKSPACE           127   // バックスペースキー
+#define KEY_DELETE              0x7F  // Deleteキー
+#define KEY_ANSI_ESC            '['   // ANSIエスケープシーケンス
+#define KEY_UP                  'A'   // 十字キー 上
+#define KEY_DOWN                'B'   // 十字キー 下
+#define KEY_RIGHT               'C'   // 十字キー 右
+#define KEY_LEFT                'D'   // 十字キー 左
 
 // ANSI ESC(エスケープシーケンス)
 #define ANSI_ESC_CLS            "\033[2J\033[H" // ANSI ESC 画面クリア
@@ -105,7 +113,7 @@ typedef struct {
     void (*p_func)(dbg_cmd_args_t *p_args);  // コールバック関数ポインタ
     int32_t min_args;                        // 最小引数数
     int32_t max_args;                        // 最大引数数
-    const char* p_description;               // コマンドの説明
+    const char *p_description;               // コマンドの説明
 } dbg_cmd_info_t;
 
 #pragma once
@@ -121,7 +129,6 @@ typedef struct {
     uint8_t order;                   // 登録順序
 } timer_state_t;
 
-// 関数プロトタイプ
 void dbg_com_init(void);
 void dbg_com_main(void);
 
