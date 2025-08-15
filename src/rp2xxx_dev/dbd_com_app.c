@@ -624,7 +624,7 @@ static void cmd_reg(dbg_cmd_args_t *p_args)
         if (bits == 8) val = REG_READ_BYTE(0, addr);
         else if (bits == 16) val = REG_READ_WORD(0, addr);
         else if (bits == 32) val = REG_READ_DWORD(0, addr);
-        printf("[REG] Read %dbit @ 0x%08X = 0x%0*X\n", bits, addr, bits / 4, val);
+        printf("[REG] Read %dbit @ 0x%08X = 0x%08X\n", bits, addr, val);
     } else if (rw == 'w') { // 書き込み
         sscanf(p_args->p_argv[4], "#%x", &wval);
         if (bits == 8) {
@@ -634,7 +634,7 @@ static void cmd_reg(dbg_cmd_args_t *p_args)
         } else if (bits == 32) {
             REG_WRITE_DWORD(0, addr, (uint32_t)wval);
         }
-            printf("[REG] Write %dbit @ 0x%08X = 0x%0*X\n", bits, addr, bits / 4, wval);
+            printf("[REG] Write %dbit @ 0x%08X = 0x%08X\n", bits, addr, wval);
     } else {
             printf("Error: 2nd arg must be 'r' or 'w'\n");
     }
