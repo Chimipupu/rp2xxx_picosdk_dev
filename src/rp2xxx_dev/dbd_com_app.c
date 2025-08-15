@@ -40,7 +40,6 @@ static void cmd_mem_dump(dbg_cmd_args_t *p_args);
 static void cmd_i2c(dbg_cmd_args_t *p_args);
 static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
-static void cmd_unknown(dbg_cmd_args_t *p_args);
 
 static int get_neopixel_color_from_name(const char* name);
 static int parse_hex_color(const char* str, uint8_t *r, uint8_t *g, uint8_t *b);
@@ -372,11 +371,6 @@ static void cmd_rst(dbg_cmd_args_t *p_args)
     watchdog_reboot(0, 0, 0);   // WDTで即時リセット
 }
 
-static void cmd_unknown(dbg_cmd_args_t *p_args)
-{
-    printf(ANSI_ESC_PG_RED "[ERROR] Unknown command. Type 'help' for available commands.\n" ANSI_ESC_PG_RESET);
-}
-
 /**
  * @brief タイマーコマンド関数
  * 
@@ -603,7 +597,6 @@ static void cmd_reg(dbg_cmd_args_t *p_args)
     uint32_t wval = 0;
     uint32_t val = 0;
     uint32_t addr = 0;
-    uint32_t rval = 0;
 
     if (p_args->argc != 4 && p_args->argc != 5) {
         printf("Error: Usage: reg #ADDR r|w BITS [#VAL]\n");
