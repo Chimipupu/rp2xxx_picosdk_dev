@@ -1,5 +1,5 @@
 /**
- * @file hw_init.dma_config
+ * @file hw_init.c
  * @author Chimipupu(https://github.com/Chimipupu)
  * @brief H/W初期化
  * @version 0.1
@@ -8,16 +8,8 @@
  * @copyright Copyright (c) 2025 Chimipupu All Rights Reserved.
  * 
  */
-#include "muc_rpxxx_util.h"
-#include "app_main.h"
 
-#include "pico/multicore.h"
-#include "hardware/adc.h"
-
-#if defined(MCU_RP2350)
-#include "pico/aon_timer.h"
-#include <time.h>
-#endif // MCU_RP2350
+#include "hw_init.h"
 
 extern volatile uint32_t g_core_num_core_0;
 extern volatile uint32_t g_core_num_core_1;
@@ -42,6 +34,7 @@ static void hw_wdt_init(void);
 static void hw_dma_init(void);
 static void hw_adc_init(void);
 
+dma_info_t g_dma_ch_info[DMA_CH_CNT];
 static int s_dma_ch = 0;
 static bool s_dma_done_flg = false;
 
@@ -329,15 +322,25 @@ static void hw_wdt_init(void)
 #endif
 }
 
-static void hw_dma_init(void)
+/**
+ * @brief DMA設定API
+ * 
+ * @param dma_info DMA情報構造体
+ */
+void app_dma_config(dma_info_t dma_info)
 {
+    // DMAの未使用CH取得
     s_dma_ch = dma_claim_unused_channel(true);
+
+    // DMAのコンフィグ
     dma_channel_config dma_config = dma_channel_get_default_config(s_dma_ch);
 
+    // DMAの構造体に情報を叩いておく
+    g_dma_ch_info[s_dma_ch].p_config = &dma_config;
     memset(&s_dma_dst_buf, 0x00, sizeof(s_dma_dst_buf));
 
     // DMA転送サイズ
-    channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
+    channel_config_set_transfer_data_size(&dma_config, dma_info.tx_size);
 
     // DMAでRead/Writeのアドレスを自動インクリメント
     channel_config_set_read_increment(&dma_config, true);
@@ -350,19 +353,34 @@ static void hw_dma_init(void)
 
     // DMAで転送開始
     dma_channel_configure(
-        s_dma_ch,                     // Channel to be configured
-        &dma_config,                // The configuration we just created
-        s_dma_dst_buf,              // 転送先
-        s_test_str,                 // 転送元
-        count_of(s_test_str),       // 転送回数
-        false                       // True=すぐ開始
+        s_dma_ch,
+        &dma_config,
+        dma_info.p_dst_addr,   // 転送先
+        dma_info.p_src_addr,   // 転送元
+        dma_info.tx_cnt,       // 転送回数
+        false                  // True=すぐ開始
     );
+}
+
+static void hw_dma_init(void)
+{
+    uint8_t i;
+
+    // DMA CH0
+    g_dma_ch_info[0].active = 1;
+    g_dma_ch_info[0].tx_size = DMA_SIZE_8;
+    g_dma_ch_info[0].tx_cnt = count_of(s_test_str);
+    g_dma_ch_info[0].p_src_addr = s_test_str;
+    g_dma_ch_info[0].p_dst_addr = s_dma_dst_buf;
+    app_dma_config(g_dma_ch_info[0]);
 
     // DMAの転送開始
-    dma_channel_start(s_dma_ch);
-
-    // DMA転送を待機
-    dma_channel_wait_for_finish_blocking(s_dma_ch);
+    for(i = 0; i < DMA_CH_CNT; i++)
+    {
+        if(g_dma_ch_info[i].active != 0) {
+            dma_channel_start(i);
+        }
+    }
 }
 
 int main()
@@ -372,6 +390,7 @@ int main()
 
     // クロック初期化
     hw_clock_init();
+    sleep_ms(100);
 
     // DMA初期化
     hw_dma_init();

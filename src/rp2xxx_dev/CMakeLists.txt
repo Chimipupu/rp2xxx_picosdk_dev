@@ -69,7 +69,7 @@ pico_generate_pio_header(rp2xxx_dev
 # -Og
 
 # add_compile_options(-O0)
-add_compile_options(-O3)
+# add_compile_options(-O3)
 # add_compile_options(-Os)
 # add_compile_options(-Og)
 

@@ -13,6 +13,7 @@
 #include "ansi_esc.h"
 #include "muc_rpxxx_util.h"
 #include "pcb_def.h"
+#include "hw_init.h"
 #include "app_main.h"
 #include "app_math.h"
 #include "muc_rpxxx_util.h"
@@ -132,6 +133,7 @@ static void cmd_cls(dbg_cmd_args_t *p_args)
 
 static void cmd_system(dbg_cmd_args_t *p_args)
 {
+    uint8_t i;
     uint32_t sys_clock, usb_clock, adc_clock, ref_clock;
     float cpu_temp;
 
@@ -212,6 +214,17 @@ static void cmd_system(dbg_cmd_args_t *p_args)
     printf("GPIO %d : NeoPixel Data Pin\n", PCB_NEOPIXEL_PIN);
     printf("NeoPixel Count : %d\n", NEOPIXEL_LED_CNT);
 #endif // PCB_NEOPIXEL
+
+    // DMA
+    printf("\n[DMA Info]\n");
+    for(i = 0; i < DMA_CH_CNT; i++)
+    {
+        if(g_dma_ch_info[i].active != 0) {
+            printf("DMA CH %d : Active\n", i);
+        } else {
+            printf("DMA CH %d : Not Use\n", i);
+        }
+    }
 
     // I2C
     printf("\n[I2C Info]\n");
