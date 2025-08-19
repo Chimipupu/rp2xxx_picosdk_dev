@@ -42,6 +42,9 @@ static void hw_wdt_init(void);
 static void hw_dma_init(void);
 static void hw_adc_init(void);
 
+static int s_dma_ch = 0;
+static bool s_dma_done_flg = false;
+
 #if defined(PCB_PICO2W)
 #include "pico/cyw43_arch.h"
 static uint8_t s_led_val = 0;
@@ -70,6 +73,19 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq)
     pio->txf[sm] = (125000000 / (2 * freq)) - 3;
 }
 #endif
+
+/**
+ * @brief DMA転送完了割り込みハンドラ
+ * 
+ */
+void dma_irq_handler()
+{
+    // 割り込みフラグをクリア
+    dma_hw->ints0 = 1u << s_dma_ch;
+
+    // メインにDMAの転送を通知
+    s_dma_done_flg = true;
+}
 
 #if defined(PCB_BTN_PIN)
 /**
@@ -315,27 +331,38 @@ static void hw_wdt_init(void)
 
 static void hw_dma_init(void)
 {
-    int dma_ch = dma_claim_unused_channel(true);
-    dma_channel_config dma_config = dma_channel_get_default_config(dma_ch);
-
-    channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
-    channel_config_set_read_increment(&dma_config, true);
-    channel_config_set_write_increment(&dma_config, true);
+    s_dma_ch = dma_claim_unused_channel(true);
+    dma_channel_config dma_config = dma_channel_get_default_config(s_dma_ch);
 
     memset(&s_dma_dst_buf, 0x00, sizeof(s_dma_dst_buf));
 
+    // DMA転送サイズ
+    channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_8);
+
+    // DMAでRead/Writeのアドレスを自動インクリメント
+    channel_config_set_read_increment(&dma_config, true);
+    channel_config_set_write_increment(&dma_config, true);
+
+    // DMA転送完了割り込み 有効化
+    dma_channel_set_irq0_enabled(s_dma_ch, true);
+    irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
+    irq_set_enabled(DMA_IRQ_0, true);
+
     // DMAで転送開始
     dma_channel_configure(
-        dma_ch,                     // Channel to be configured
+        s_dma_ch,                     // Channel to be configured
         &dma_config,                // The configuration we just created
-        s_dma_dst_buf,              // The initial write address
-        s_test_str,                 // The initial read address
-        count_of(s_test_str),       // Number of transfers; in this case each is 1 byte.
-        true                        // Start immediately.
+        s_dma_dst_buf,              // 転送先
+        s_test_str,                 // 転送元
+        count_of(s_test_str),       // 転送回数
+        false                       // True=すぐ開始
     );
 
+    // DMAの転送開始
+    dma_channel_start(s_dma_ch);
+
     // DMA転送を待機
-    dma_channel_wait_for_finish_blocking(dma_ch);
+    dma_channel_wait_for_finish_blocking(s_dma_ch);
 }
 
 int main()
@@ -345,6 +372,9 @@ int main()
 
     // クロック初期化
     hw_clock_init();
+
+    // DMA初期化
+    hw_dma_init();
 
     // UART初期化
     hw_uart_init();
@@ -375,9 +405,6 @@ int main()
 
     // SPI初期化
     hw_spi_init();
-
-    // DMA初期化
-    hw_dma_init();
 
     // タイマー初期化
     hw_timer_init();
