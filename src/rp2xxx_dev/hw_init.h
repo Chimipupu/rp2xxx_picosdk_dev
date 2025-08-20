@@ -31,6 +31,7 @@ typedef struct {
     uint32_t tx_cnt;
     void *p_src_addr;               // 転送元のアドレスポインタ
     void *p_dst_addr;               // 転送先のアドレスポインタ
+    uint8_t use_irq_ch;             // 使用中のIRQ(0xFFで無効)
 } dma_info_t;
 
 #define DMA_CH_CNT          16      // DMA CHの総数

@@ -33,11 +33,15 @@ static void hw_timer_init(void);
 static void hw_wdt_init(void);
 static void hw_adc_init(void);
 
+const char s_test_str[] = "DMA Test (from DMA CH0)";
+char s_dma_dst_buf[count_of(s_test_str)];
+const char s_dma_test_src_buf[] = "DMA Test (from DMA CH1)";
+char s_dma_test_dst_buf[count_of(s_dma_test_src_buf)];
 dma_info_t g_dma_ch_info[DMA_CH_CNT];
-static int s_dma_ch = 0;
 static bool s_is_dma_irq_0_use = false;
 static bool s_is_dma_irq_1_use = false;
-static bool s_dma_done_flg = false;
+static bool s_dma_ch_0_done_flg = false;
+static bool s_dma_ch_1_done_flg = false;
 static void hw_dma_config(dma_info_t dma_info);
 static void hw_dma_init(void);\
 
@@ -51,12 +55,6 @@ void cyw43_led_tgl(void)
     s_led_val = !s_led_val;
 }
 #endif
-
-const char s_test_str[] = "DMA Test (from DMA CH1)";
-char s_dma_dst_buf[count_of(s_test_str)];
-
-const char s_dma_test_src_buf[] = "DMA Test (from DMA CH1)";
-char s_dma_test_dst_buf[count_of(s_dma_test_src_buf)];
 
 #ifdef RPI_PIO_USE
 #include "blink.pio.h"
@@ -79,11 +77,18 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq)
  */
 void dma_irq_0_handler()
 {
-    // 割り込みフラグをクリア(IRQ0)
-    dma_hw->ints0 = 1u << s_dma_ch;
+    uint8_t i;
+
+    for(i = 0; i < DMA_CH_CNT; i++)
+    {
+        if(g_dma_ch_info[i].use_irq_ch == 0){
+            // 割り込みフラグをクリア(IRQ0)
+            dma_hw->ints0 = 1u << i;
+        }
+    }
 
     // メインにDMAの転送を通知
-    s_dma_done_flg = true;
+    s_dma_ch_0_done_flg = true;
 }
 
 /**
@@ -92,11 +97,18 @@ void dma_irq_0_handler()
  */
 void dma_irq_1_handler()
 {
-    // 割り込みフラグをクリア(IRQ1)
-    dma_hw->ints1 = 1u << s_dma_ch;
+    uint8_t i;
+
+    for(i = 0; i < DMA_CH_CNT; i++)
+    {
+        if(g_dma_ch_info[i].use_irq_ch == 1){
+            // 割り込みフラグをクリア(IRQ1)
+            dma_hw->ints1 = 1u << i;
+        }
+    }
 
     // メインにDMAの転送を通知
-    s_dma_done_flg = true;
+    s_dma_ch_1_done_flg = true;
 }
 
 #if defined(PCB_BTN_PIN)
@@ -349,13 +361,14 @@ static void hw_wdt_init(void)
 static void hw_dma_config(dma_info_t dma_info)
 {
     // DMAの未使用CH取得
-    s_dma_ch = dma_claim_unused_channel(true);
+    int dma_ch = dma_claim_unused_channel(true);
+    g_dma_ch_info[dma_ch].active = 1;
 
     // DMAのコンフィグ
-    dma_channel_config dma_config = dma_channel_get_default_config(s_dma_ch);
+    dma_channel_config dma_config = dma_channel_get_default_config(dma_ch);
 
     // DMAの構造体に情報を叩いておく
-    g_dma_ch_info[s_dma_ch].p_config = &dma_config;
+    g_dma_ch_info[dma_ch].p_config = &dma_config;
     memset(&s_dma_dst_buf, 0x00, sizeof(s_dma_dst_buf));
 
     // DMA転送サイズ
@@ -368,20 +381,24 @@ static void hw_dma_config(dma_info_t dma_info)
     if(s_is_dma_irq_0_use != true) {
         // DMA転送完了割り込みをIRQ0で取るよう設定
         s_is_dma_irq_0_use = true;
-        dma_channel_set_irq0_enabled(s_dma_ch, true);
+        g_dma_ch_info[dma_ch].use_irq_ch = 0;
+        dma_channel_set_irq0_enabled(dma_ch, true);
         irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
         irq_set_enabled(DMA_IRQ_0, true);
-    } else {
+    } else if(s_is_dma_irq_1_use != true) {
         // DMA転送完了割り込みをIRQ1で取るよう設定
         s_is_dma_irq_1_use = true;
-        dma_channel_set_irq0_enabled(s_dma_ch, true);
+        g_dma_ch_info[dma_ch].use_irq_ch = 1;
+        dma_channel_set_irq1_enabled(dma_ch, true);
         irq_set_exclusive_handler(DMA_IRQ_1, dma_irq_1_handler);
         irq_set_enabled(DMA_IRQ_1, true);
+    } else {
+        g_dma_ch_info[dma_ch].use_irq_ch = 0xFF;
     }
 
     // DMAで転送開始
     dma_channel_configure(
-        s_dma_ch,
+        dma_ch,
         &dma_config,
         dma_info.p_dst_addr,   // 転送先
         dma_info.p_src_addr,   // 転送元
@@ -394,20 +411,23 @@ static void hw_dma_init(void)
 {
     uint8_t i;
 
+    for(i = 0; i < DMA_CH_CNT; i++)
+    {
+        g_dma_ch_info[i].use_irq_ch = 0xFF;
+    }
+
     // DMA CH0
-    g_dma_ch_info[0].active = 1;
     g_dma_ch_info[0].tx_size = DMA_SIZE_8;
     g_dma_ch_info[0].tx_cnt = count_of(s_test_str);
-    g_dma_ch_info[0].p_src_addr = s_test_str;
-    g_dma_ch_info[0].p_dst_addr = s_dma_dst_buf;
+    g_dma_ch_info[0].p_src_addr = (char *)s_test_str;
+    g_dma_ch_info[0].p_dst_addr = (char *)s_dma_dst_buf;
     hw_dma_config(g_dma_ch_info[0]);
 
     // DNA CH1
-    g_dma_ch_info[1].active = 1;
-    g_dma_ch_info[1].tx_size = DMA_SIZE_32;
-    g_dma_ch_info[1].tx_cnt = count_of(s_test_str);
-    g_dma_ch_info[1].p_src_addr = s_dma_test_src_buf;
-    g_dma_ch_info[1].p_dst_addr = s_dma_test_dst_buf;
+    g_dma_ch_info[1].tx_size = DMA_SIZE_8;
+    g_dma_ch_info[1].tx_cnt = count_of(s_dma_test_src_buf);
+    g_dma_ch_info[1].p_src_addr = (char *)s_dma_test_src_buf;
+    g_dma_ch_info[1].p_dst_addr = (char *)s_dma_test_dst_buf;
     hw_dma_config(g_dma_ch_info[1]);
 
     // DMAの転送開始
