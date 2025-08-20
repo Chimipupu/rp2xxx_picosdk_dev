@@ -37,6 +37,4 @@ typedef struct {
 
 extern dma_info_t g_dma_ch_info[DMA_CH_CNT];
 
-void app_dma_config(dma_info_t dma_info);
-
 #endif // HW_INIT_H

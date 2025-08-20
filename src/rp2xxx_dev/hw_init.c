@@ -31,12 +31,15 @@ static void hw_i2c_init(void);
 static void hw_spi_init(void);
 static void hw_timer_init(void);
 static void hw_wdt_init(void);
-static void hw_dma_init(void);
 static void hw_adc_init(void);
 
 dma_info_t g_dma_ch_info[DMA_CH_CNT];
 static int s_dma_ch = 0;
+static bool s_is_dma_irq_0_use = false;
+static bool s_is_dma_irq_1_use = false;
 static bool s_dma_done_flg = false;
+static void hw_dma_config(dma_info_t dma_info);
+static void hw_dma_init(void);\
 
 #if defined(PCB_PICO2W)
 #include "pico/cyw43_arch.h"
@@ -49,8 +52,11 @@ void cyw43_led_tgl(void)
 }
 #endif
 
-const char s_test_str[] = "Hello, world! (from DMA)";
+const char s_test_str[] = "DMA Test (from DMA CH1)";
 char s_dma_dst_buf[count_of(s_test_str)];
+
+const char s_dma_test_src_buf[] = "DMA Test (from DMA CH1)";
+char s_dma_test_dst_buf[count_of(s_dma_test_src_buf)];
 
 #ifdef RPI_PIO_USE
 #include "blink.pio.h"
@@ -68,13 +74,26 @@ void blink_pin_forever(PIO pio, uint sm, uint offset, uint pin, uint freq)
 #endif
 
 /**
- * @brief DMA転送完了割り込みハンドラ
+ * @brief DMA転送完了割り込みハンドラ(IRQ0)
  * 
  */
-void dma_irq_handler()
+void dma_irq_0_handler()
 {
-    // 割り込みフラグをクリア
+    // 割り込みフラグをクリア(IRQ0)
     dma_hw->ints0 = 1u << s_dma_ch;
+
+    // メインにDMAの転送を通知
+    s_dma_done_flg = true;
+}
+
+/**
+ * @brief DMA転送完了割り込みハンドラ(IRQ1)
+ * 
+ */
+void dma_irq_1_handler()
+{
+    // 割り込みフラグをクリア(IRQ1)
+    dma_hw->ints1 = 1u << s_dma_ch;
 
     // メインにDMAの転送を通知
     s_dma_done_flg = true;
@@ -327,7 +346,7 @@ static void hw_wdt_init(void)
  * 
  * @param dma_info DMA情報構造体
  */
-void app_dma_config(dma_info_t dma_info)
+static void hw_dma_config(dma_info_t dma_info)
 {
     // DMAの未使用CH取得
     s_dma_ch = dma_claim_unused_channel(true);
@@ -346,10 +365,19 @@ void app_dma_config(dma_info_t dma_info)
     channel_config_set_read_increment(&dma_config, true);
     channel_config_set_write_increment(&dma_config, true);
 
-    // DMA転送完了割り込み 有効化
-    dma_channel_set_irq0_enabled(s_dma_ch, true);
-    irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_handler);
-    irq_set_enabled(DMA_IRQ_0, true);
+    if(s_is_dma_irq_0_use != true) {
+        // DMA転送完了割り込みをIRQ0で取るよう設定
+        s_is_dma_irq_0_use = true;
+        dma_channel_set_irq0_enabled(s_dma_ch, true);
+        irq_set_exclusive_handler(DMA_IRQ_0, dma_irq_0_handler);
+        irq_set_enabled(DMA_IRQ_0, true);
+    } else {
+        // DMA転送完了割り込みをIRQ1で取るよう設定
+        s_is_dma_irq_1_use = true;
+        dma_channel_set_irq0_enabled(s_dma_ch, true);
+        irq_set_exclusive_handler(DMA_IRQ_1, dma_irq_1_handler);
+        irq_set_enabled(DMA_IRQ_1, true);
+    }
 
     // DMAで転送開始
     dma_channel_configure(
@@ -372,7 +400,15 @@ static void hw_dma_init(void)
     g_dma_ch_info[0].tx_cnt = count_of(s_test_str);
     g_dma_ch_info[0].p_src_addr = s_test_str;
     g_dma_ch_info[0].p_dst_addr = s_dma_dst_buf;
-    app_dma_config(g_dma_ch_info[0]);
+    hw_dma_config(g_dma_ch_info[0]);
+
+    // DNA CH1
+    g_dma_ch_info[1].active = 1;
+    g_dma_ch_info[1].tx_size = DMA_SIZE_32;
+    g_dma_ch_info[1].tx_cnt = count_of(s_test_str);
+    g_dma_ch_info[1].p_src_addr = s_dma_test_src_buf;
+    g_dma_ch_info[1].p_dst_addr = s_dma_test_dst_buf;
+    hw_dma_config(g_dma_ch_info[1]);
 
     // DMAの転送開始
     for(i = 0; i < DMA_CH_CNT; i++)
