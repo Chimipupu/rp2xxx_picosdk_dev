@@ -51,10 +51,10 @@ pico_set_program_name(rp2xxx_dev "rp2xxx_dev")
 pico_set_program_version(rp2xxx_dev "0.1.0")
 
 # Generate PIO header
-pico_generate_pio_header(rp2xxx_dev
-                        ${CMAKE_CURRENT_LIST_DIR}/blink.pio
-                        ${CMAKE_CURRENT_LIST_DIR}/neopixel.pio
-                        )
+# pico_generate_pio_header(rp2xxx_dev
+#                         ${CMAKE_CURRENT_LIST_DIR}/blink.pio
+#                         ${CMAKE_CURRENT_LIST_DIR}/neopixel.pio
+#                         )
 
 # =========================================================================
 # 【コンパルオプション】

@@ -32,8 +32,7 @@ static void gpio_tx_neopixel_data(uint32_t neopixel_data);
 static void neopixel_reset(neopixel_t *p_neopixel)
 {
     gpio_put(p_neopixel->data_pin, PORT_OFF);
-    sleep_us(250); // 50μs以上のLow期間でリセット
-    gpio_put(p_neopixel->data_pin, PORT_ON);
+    sleep_us(300); // 250μs以上のLow期間でリセット
 }
 
 /**
@@ -60,17 +59,20 @@ static void neopixel_reset(neopixel_t *p_neopixel)
 static void gpio_tx_neopixel_data(uint32_t neopixel_data)
 {
     uint32_t mask = 0x800000; // MSBから開始（bit23）
+    volatile uint32_t *gpio_set = &sio_hw->gpio_set;
+    volatile uint32_t *gpio_clr = &sio_hw->gpio_clr;
+    uint32_t pin_mask = 1u << s_p_neopixel->data_pin;
 
     // 割り込みマスク
     _DI();
 
     // 24ビット分のデータを送信
-    for (int i = 0; i < NEOPIXEL_DATA_BIT; i++)
+    for (uint8_t i = 0; i < NEOPIXEL_DATA_BIT; i++)
     {
         // T1 (1bitデータ)
         if (neopixel_data & mask) {
-            // T1H : 650 (130サイクル) - gpio_put分(約5サイクル) = 125NOP
-            gpio_put(s_p_neopixel->data_pin, 1);
+            // T1H : 650 (130サイクル)
+             *gpio_set = pin_mask;
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
@@ -96,9 +98,10 @@ static void gpio_tx_neopixel_data(uint32_t neopixel_data)
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 125
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
 
-            // T1L: 600ns (120サイクル) - gpio_put分(約5サイクル) = 115NOP
-            gpio_put(s_p_neopixel->data_pin, 0);
+            // T1L: 600ns (120サイクル)
+            *gpio_clr = pin_mask;
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
@@ -122,11 +125,11 @@ static void gpio_tx_neopixel_data(uint32_t neopixel_data)
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 115
-
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 120
         // T0 (0bitデータ)
         } else {
             // T0H: 350ns (70サイクル) - gpio_put分(約5サイクル) = 65NOP
-            gpio_put(s_p_neopixel->data_pin, 1);
+            *gpio_set = pin_mask;
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
@@ -140,9 +143,10 @@ static void gpio_tx_neopixel_data(uint32_t neopixel_data)
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 55
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 65
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 70
 
             // Low期間: 850ns (180サイクル) - gpio_put分(約5サイクル) = 175NOP
-            gpio_put(s_p_neopixel->data_pin, 0);
+            *gpio_clr = pin_mask;
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
@@ -178,9 +182,12 @@ static void gpio_tx_neopixel_data(uint32_t neopixel_data)
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 170
             _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 175
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 180
         }
         mask >>= 1; // 次のビットへ
     }
+
+    *gpio_clr = pin_mask;
 
     // 割り込み許可
     _EI();
@@ -191,6 +198,10 @@ static void set_neopixel_data_show(neopixel_t *p_neopixel)
 {
     uint8_t i;
 
+#ifdef NEOPIXEL_CTRL_SW
+    neopixel_reset(s_p_neopixel);
+#endif // NEOPIXEL_CTRL_PIO
+
     for ( i = 0; i < p_neopixel->led_cnt; i++)
     {
 #ifdef NEOPIXEL_CTRL_PIO
@@ -199,11 +210,6 @@ static void set_neopixel_data_show(neopixel_t *p_neopixel)
         gpio_tx_neopixel_data(p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb);
 #endif // NEOPIXEL_CTRL_PIO
     }
-
-#ifdef NEOPIXEL_CTRL_SW
-    // 送信完了後にリセット信号を送信
-    neopixel_reset(s_p_neopixel);
-#endif // NEOPIXEL_CTRL_PIO
 }
 
 // H/W(PIO)でNeoPixelをコントロール
