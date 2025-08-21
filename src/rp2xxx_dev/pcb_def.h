@@ -26,8 +26,8 @@
 #include "hardware/uart.h"
 
 // [マイコン選択]
-// #define MCU_RP2040
-#define MCU_RP2350
+#define MCU_RP2040
+// #define MCU_RP2350
 
 // マイコン未定義はビルドエラー
 #if !defined(MCU_RP2040) && !defined(MCU_RP2350)
@@ -151,15 +151,15 @@
     #endif //PCB_WEACT_RP2350B
 #endif
 
-
 // [PIO関連]
 // #define RPI_PIO_USE
 
 // [NeoPixel]
 #define PCB_NEOPIXEL
 #ifdef PCB_NEOPIXEL
+    #define NEOPIXEL_LED_CNT         1   // NeoPixelの数
     // #define NEOPIXEL_LED_CNT         4   // NeoPixelの数
-    #define NEOPIXEL_LED_CNT         8   // NeoPixelの数
+    // #define NEOPIXEL_LED_CNT         8   // NeoPixelの数
     // #define NEOPIXEL_LED_CNT         16  // NeoPixelの数
     // #define NEOPIXEL_LED_CNT         64  // NeoPixelの数
 #if defined(PCB_YD_RP2040)
@@ -168,6 +168,7 @@
     #define PCB_NEOPIXEL_PIN        16  // NeoPixelのデータピン
 #else
     #define PCB_NEOPIXEL_PIN        15  // NeoPixelのデータピン
+    // #define PCB_NEOPIXEL_PIN        20
 #endif
 #endif //PCB_NEOPIXEL
 
@@ -175,7 +176,7 @@
 // #define TIMER_ALARM_IRQ_ENABLE
 
 // [WDT関連]
-#define _WDT_ENABLE_                                // WDT有効マクロ
+// #define _WDT_ENABLE_                                // WDT有効マクロ
 
 #ifdef _WDT_ENABLE_
 #define _WDT_OVF_TIME_MS_ 6000                      // WDTが鳴く時間(ms)

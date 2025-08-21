@@ -1,47 +1,231 @@
 /**
  * @file drv_neopixel.c
  * @author Chimipupu(https://github.com/Chimipupu)
- * @brief NeoPixelドライバ(PIO経由)
+ * @brief NeoPixelドライバ
  * @version 0.1
- * @date 2025-07-12
+ * @date 2025-08-22
  * 
  * @copyright Copyright (c) 2025 Chimipupu All Rights Reserved.
  * 
  */
 #include "drv_neopixel.h"
 
-static void pio_neopixel_begin(neopixel_t *p_neopixel, PIO pio, uint sm, uint offset,  uint pin);
-static void set_pio_neopixel_show(neopixel_t *p_neopixel);
-
 neopixel_t *s_p_neopixel;
+static void set_neopixel_data_show(neopixel_t *p_neopixel);
+
+#ifdef NEOPIXEL_CTRL_PIO
+static void pio_neopixel_begin(neopixel_t *p_neopixel, PIO pio, uint sm, uint offset,  uint pin);
 static PIO s_pio = pio1;
 static uint s_sm = 0;
 static uint s_offset = 0;
+#endif // NEOPIXEL_CTRL_PIO
 
-static void pio_neopixel_begin(neopixel_t *p_neopixel, PIO pio, uint sm, uint offset,  uint pin)
+#ifdef NEOPIXEL_CTRL_SW
+#include "muc_rpxxx_util.h"
+static void neopixel_reset(neopixel_t *p_neopixel);
+static void gpio_tx_neopixel_data(uint32_t neopixel_data);
+
+/**
+ * @brief NeoPixelリセット信号の送信
+ * @param p_neopixel NeoPixel構造体へのポインタ
+ */
+static void neopixel_reset(neopixel_t *p_neopixel)
 {
-    pio_neopixel_init(pio, sm, offset, pin, 800000, false);
+    gpio_put(p_neopixel->data_pin, PORT_OFF);
+    sleep_us(250); // 50μs以上のLow期間でリセット
+    gpio_put(p_neopixel->data_pin, PORT_ON);
 }
 
-static void set_pio_neopixel_show(neopixel_t *p_neopixel)
+/**
+ * @brief S/WでGPIOからNeoPixelデータを送信
+ * @param neopixel_data 送信するNeoPixelデータ（GRB形式、24bit）
+ *
+ * NeoPixelのタイミング要件:
+ * - T0(0bit): T0H 220ns~380ns, T0L 580ns~1000ns
+ * - T1(1bit): T1H 580ns~1000ns, T1L 580ns~1000ns
+ * - Treset: Low 280μs以上
+ *
+ * RP2040 @200MHz動作時の1サイクル = 5ns
+ * T0H : 350ns
+ * T0L : 900ns
+ * T0 : = (350ns + 900ns) = 1.25us = 800KHz
+ * T1H : 650ns
+ * T1L : 600ns
+ * T1 : = (650ns + 600ns) = 1.25us = 800KHz
+ *
+ * RP2350 @150MHz動作時の1サイクル = 5ns
+ *
+ * gpio_put()は約5サイクル消費? NOPで要調整
+ */
+static void gpio_tx_neopixel_data(uint32_t neopixel_data)
+{
+    uint32_t mask = 0x800000; // MSBから開始（bit23）
+
+    // 割り込みマスク
+    _DI();
+
+    // 24ビット分のデータを送信
+    for (int i = 0; i < NEOPIXEL_DATA_BIT; i++)
+    {
+        // T1 (1bitデータ)
+        if (neopixel_data & mask) {
+            // T1H : 650 (130サイクル) - gpio_put分(約5サイクル) = 125NOP
+            gpio_put(s_p_neopixel->data_pin, 1);
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 125
+
+            // T1L: 600ns (120サイクル) - gpio_put分(約5サイクル) = 115NOP
+            gpio_put(s_p_neopixel->data_pin, 0);
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 115
+
+        // T0 (0bitデータ)
+        } else {
+            // T0H: 350ns (70サイクル) - gpio_put分(約5サイクル) = 65NOP
+            gpio_put(s_p_neopixel->data_pin, 1);
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 55
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 65
+
+            // Low期間: 850ns (180サイクル) - gpio_put分(約5サイクル) = 175NOP
+            gpio_put(s_p_neopixel->data_pin, 0);
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 125
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 150
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 160
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 170
+            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 175
+        }
+        mask >>= 1; // 次のビットへ
+    }
+
+    // 割り込み許可
+    _EI();
+}
+#endif // NEOPIXEL_CTRL_SW
+
+static void set_neopixel_data_show(neopixel_t *p_neopixel)
 {
     uint8_t i;
 
     for ( i = 0; i < p_neopixel->led_cnt; i++)
     {
+#ifdef NEOPIXEL_CTRL_PIO
         pio_sm_put_blocking(s_pio, s_sm, p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb << 8u);
+#else
+        gpio_tx_neopixel_data(p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb);
+#endif // NEOPIXEL_CTRL_PIO
     }
+
+#ifdef NEOPIXEL_CTRL_SW
+    // 送信完了後にリセット信号を送信
+    neopixel_reset(s_p_neopixel);
+#endif // NEOPIXEL_CTRL_PIO
 }
+
+// H/W(PIO)でNeoPixelをコントロール
+#ifdef NEOPIXEL_CTRL_PIO
+static void pio_neopixel_begin(neopixel_t *p_neopixel, PIO pio, uint sm, uint offset,  uint pin)
+{
+    pio_neopixel_init(pio, sm, offset, pin, 800000, false);
+}
+#endif // NEOPIXEL_CTRL_PIO
 
 void drv_neopixel_init(neopixel_t *p_neopixel)
 {
-    bool ret = false;
-
     s_p_neopixel = p_neopixel;
+
+#ifdef NEOPIXEL_CTRL_PIO
+    bool ret = false;
     s_offset = pio_add_program(s_pio, &neopixel_program);
     ret = pio_claim_free_sm_and_add_program_for_gpio_range(&neopixel_program, &s_pio, &s_sm, &s_offset, p_neopixel->data_pin, 1, true);
     hard_assert(ret);
     pio_neopixel_begin(p_neopixel, s_pio, s_sm, s_offset, p_neopixel->data_pin);
+#endif // NEOPIXEL_CTRL_PIO
+
     drv_neopixel_clear(p_neopixel);
 }
 
@@ -51,7 +235,7 @@ void drv_neopixel_set_pixel_rgb(neopixel_t *p_neopixel, uint8_t led, uint8_t red
     p_neopixel->p_pixel_grb_buf[led].grb_color.grb_bit.blue = blue;
     p_neopixel->p_pixel_grb_buf[led].grb_color.grb_bit.red = red;
     p_neopixel->p_pixel_grb_buf[led].grb_color.grb_bit.green = green;
-    set_pio_neopixel_show(p_neopixel);
+    set_neopixel_data_show(p_neopixel);
 }
 
 void drv_neopixel_set_pixel_color(neopixel_t *p_neopixel, uint8_t led, uint8_t color)
@@ -182,13 +366,13 @@ void drv_neopixel_clear(neopixel_t *p_neopixel)
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.blue = 0;
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.red = 0;
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.green = 0;
-        set_pio_neopixel_show(p_neopixel);
+        set_neopixel_data_show(p_neopixel);
     }
 }
 
 void drv_neopixel_show(neopixel_t *p_neopixel)
 {
-    set_pio_neopixel_show(p_neopixel);
+    set_neopixel_data_show(p_neopixel);
 }
 
 void drv_neopixel_set_all_led_color(neopixel_t *p_neopixel, uint8_t red, uint8_t green, uint8_t blue)
@@ -199,7 +383,7 @@ void drv_neopixel_set_all_led_color(neopixel_t *p_neopixel, uint8_t red, uint8_t
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.blue = blue;
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.red = red;
         p_neopixel->p_pixel_grb_buf[i].grb_color.grb_bit.green = green;
-        set_pio_neopixel_show(p_neopixel);
+        set_neopixel_data_show(p_neopixel);
     }
 }
 

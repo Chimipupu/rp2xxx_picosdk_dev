@@ -1,9 +1,9 @@
 /**
  * @file drv_neopixel.h
  * @author Chimipupu(https://github.com/Chimipupu)
- * @brief NeoPixelドライバヘッダ(PIO経由)
+ * @brief NeoPixelドライバヘッダ
  * @version 0.1
- * @date 2025-07-12
+ * @date 2025-08-22
  * 
  * @copyright Copyright (c) 2025 Chimipupu All Rights Reserved.
  * 
@@ -11,15 +11,25 @@
 #ifndef DRV_NEOPIXEL_H
 #define DRV_NEOPIXEL_H
 
-// #pragma once
+// #define NEOPIXEL_CTRL_PIO   // H/W(PIO)でNeoPixelをコントロール
+#define NEOPIXEL_CTRL_SW    // S/WでNeoPixelをコントロール
 
-#include "hardware/pio.h"
-#include "pico/stdlib.h"
+#if !defined(NEOPIXEL_CTRL_PIO) && !defined(NEOPIXEL_CTRL_SW)
+#error Plz! define NEOPIXEL_CTRL_PIO or NEOPIXEL_CTRL_SW!  at drv_neopixel.h
+#endif
+
+#define NEOPIXEL_DATA_BIT       24    // Neopixelのデータ 24bit
+
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef NEOPIXEL_CTRL_PIO
+#include "hardware/pio.h"
+#include "pico/stdlib.h"
 #include "neopixel.pio.h"
+#endif // NEOPIXEL_CTRL_PIO
 
 // NeoPixelの色定義
 typedef enum {

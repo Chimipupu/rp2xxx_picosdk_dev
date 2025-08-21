@@ -15,7 +15,9 @@
 
 #if defined(MCU_RP2040)
 #include "rp2040_reg.h"
-#elif defined(MCU_RP2350)
+#endif
+
+#if defined(MCU_RP2350)
 #include "rp2350_reg.h"
 #include "pico/rand.h"
 #include "hardware/sha256.h"
@@ -36,9 +38,9 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 
-#define CORE_1_WUP_RESULT_DATA     0x12345678
-#define MULTI_CORE_TEST_DATA       0x97654321
-#define PROC_NEOPIXEL_FADE         0x00000123
+#define CORE_1_WUP_RESULT_DATA              0x12345678
+#define MULTI_CORE_TEST_DATA                0x97654321
+#define PROC_NEOPIXEL_FADE                  0x00000123
 
 // レジスタを8/16/32bitでR/Wするマクロ
 #define REG_READ_BYTE(base, offset)         (*(volatile uint8_t  *)((base) + (offset)))
@@ -79,7 +81,7 @@ __attribute__( ( always_inline ) ) static inline void _WDT_CNT_RST(void)
     // WDTのcntを0にしてなでる
     watchdog_hw->load = 0;
 #else
-    _NOP;
+    _NOP();
 #endif // _WDT_ENABLE_
 }
 

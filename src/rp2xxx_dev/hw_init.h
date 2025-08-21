@@ -3,7 +3,7 @@
  * @author Chimipupu(https://github.com/Chimipupu)
  * @brief H/W初期化
  * @version 0.1
- * @date 2025-08-20
+ * @date 2025-08-21
  * 
  * @copyright Copyright (c) 2025 Chimipupu All Rights Reserved.
  * 
