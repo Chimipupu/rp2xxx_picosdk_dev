@@ -54,12 +54,12 @@ void app_core_0_main(void)
         cyw43_led_tgl();
         sleep_ms(1000);
 #else
-        // s_core_fifo_data = get_multicore_fifo();
-        // app_multicore_state_machine(s_core_fifo_data);
+        s_core_fifo_data = get_multicore_fifo();
+        app_multicore_state_machine(s_core_fifo_data);
 
         if (s_fade_pixel_flg != 0) {
             drv_neopixel_pixel_color_fade();
-            sleep_ms(1);
+            sleep_ms(20);
         }
 #endif
         _WDT_CNT_RST();
