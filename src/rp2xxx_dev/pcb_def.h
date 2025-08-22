@@ -164,6 +164,7 @@
     // #define NEOPIXEL_LED_CNT         64  // NeoPixelの数
 #if defined(PCB_YD_RP2040)
     #define PCB_NEOPIXEL_PIN        23  // NeoPixelのデータピン
+    // #define PCB_NEOPIXEL_PIN        19  // NeoPixelのデータピン
 #elif defined(PCB_RP2350_ZERO)
     #define PCB_NEOPIXEL_PIN        16  // NeoPixelのデータピン
 #else
@@ -199,8 +200,8 @@
 #define SPI_0_PORT              spi0
 #define SPI_1_PORT              spi1
 #define SPI_PORT                SPI_0_PORT
-#define SPI_BIT_RATE_1MHZ       (1  *   100000)
-#define SPI_BIT_RATE_8MHZ       (8  *   100000)
+#define SPI_BIT_RATE_1MHZ       (1  *   1000000)
+#define SPI_BIT_RATE_8MHZ       (8  *   1000000)
 #define SPI_BIT_RATE_10MHZ      (10 *   1000000)
 #define SPI_BIT_RATE_20MHZ      (20 *   1000000)
 #define SPI_BIT_RATE_50MHZ      (50 *   1000000)
