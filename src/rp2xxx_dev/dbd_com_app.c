@@ -43,7 +43,7 @@ static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
 
 static int get_neopixel_color_from_name(const char* name);
-static int parse_hex_color(const char* str, uint8_t *r, uint8_t *g, uint8_t *b);
+static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
 
 // タイマー状態
 static timer_state_t s_timer_alarn_state[TIMER_MAX_ALARMS]; // タイマーアラームのステート
@@ -669,20 +669,24 @@ static int get_neopixel_color_from_name(const char* name)
     return -1;
 }
 
-static int parse_hex_color(const char* str, uint8_t *r, uint8_t *g, uint8_t *b)
+static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b)
 {
-    if ((str == NULL) || (strlen(str) != 7) || (str[0] != '#')) {
+    int ret;
+    unsigned int rv, gv, bv = 0;
+    char *p_tmp;
+
+    p_tmp = (char *)p_str;
+
+    if ((p_str == NULL) || (strlen(p_str) != 7) || (p_str[0] != '#')) {
         return -1;
     }
 
-    uint8_t rv, gv, bv = 0;
-    if (sscanf(str+1, "%02x%02x%02x", &rv, &gv, &bv) == 3) {
-        *r = (uint8_t)rv;
-        *g = (uint8_t)gv;
-        *b = (uint8_t)bv;
-        return 0;
-    }
-    return -1;
+    sscanf(p_tmp, "#%02X%02X%02X", &rv, &gv, &bv);
+    *p_r = (uint8_t)rv;
+    *p_g = (uint8_t)gv;
+    *p_b = (uint8_t)bv;
+
+    return 0;
 }
 
 /**
@@ -697,7 +701,7 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
     uint8_t all_set_flag = 0;
     int color_enum = 0;
 
-    char* p_mode_str = p_args->p_argv[1];
+    char *p_mode_str = p_args->p_argv[1];
     // 第二引数がcls
     if(strcasecmp(p_mode_str, "cls") == 0) {
         drv_neopixel_init(&s_neopixel);
@@ -732,8 +736,8 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
 
     // 第三引数が文字
     uint8_t led_idx = (uint8_t)idx - 1;
-    const char* color_str = p_args->p_argv[2];
-    color_enum = get_neopixel_color_from_name(color_str);
+    char *p_color_str = p_args->p_argv[2];
+    color_enum = get_neopixel_color_from_name(p_color_str);
     if (color_enum >= 0) {
         if (all_set_flag != 0) {
             // 全てのNeoPixelに同じ色を設定
@@ -742,18 +746,18 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
                 drv_neopixel_get_pixel_color(&s_neopixel, i, color_enum);
             }
             drv_neopixel_show(&s_neopixel);
-            printf("All NeoPixels set to %s\n", color_str);
+            printf("All NeoPixels set to %s\n", p_color_str);
             return;
         } else {
             // 指定されたNeoPixelに色を設定
             drv_neopixel_set_pixel_color(&s_neopixel, led_idx, color_enum);
-            printf("NeoPixel[%d] = %s\n", led_idx, color_str);
+            printf("NeoPixel[%d] = %s\n", led_idx, p_color_str);
             return;
         }
     }
 
     // 第三引数が#RRGGBB形式
-    if (parse_hex_color(color_str, &r, &g, &b) == 0) {
+    if (parse_hex_color(p_color_str, &r, &g, &b) == 0) {
         if (all_set_flag != 0) {
             // 全てのNeoPixelに同じ色を設定
             drv_neopixel_set_all_led_color(&s_neopixel, r, g, b);
