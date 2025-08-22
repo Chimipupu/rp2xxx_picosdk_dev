@@ -20,31 +20,18 @@ static uint s_sm = 0;
 static uint s_offset = 0;
 #endif // NEOPIXEL_CTRL_PIO
 
-#ifdef NEOPIXEL_CTRL_SW
-#include "muc_rpxxx_util.h"
-static void neopixel_reset(neopixel_t *p_neopixel);
-static void gpio_tx_neopixel_data(uint32_t neopixel_data);
+#ifdef NEOPIXEL_CTRL_SPI
+static void neopixel_data_spi_tx(uint32_t neopixel_data);
 
 /**
- * @brief NeoPixelリセット信号の送信
- * @param p_neopixel NeoPixel構造体へのポインタ
- */
-static void neopixel_reset(neopixel_t *p_neopixel)
-{
-    gpio_put(p_neopixel->data_pin, PORT_OFF);
-    sleep_us(300); // 250μs以上のLow期間でリセット
-}
-
-/**
- * @brief S/WでGPIOからNeoPixelデータを送信
+ * @brief SPIでNeoPixelのデータを送信
  * @param neopixel_data 送信するNeoPixelデータ（GRB形式、24bit）
  *
- * NeoPixelのタイミング要件:
+ * NeoPixelのタイミング:
  * - T0(0bit): T0H 220ns~380ns, T0L 580ns~1000ns
  * - T1(1bit): T1H 580ns~1000ns, T1L 580ns~1000ns
  * - Treset: Low 280μs以上
  *
- * RP2040 @200MHz動作時の1サイクル = 5ns
  * T0H : 350ns
  * T0L : 900ns
  * T0 : = (350ns + 900ns) = 1.25us = 800KHz
@@ -52,164 +39,59 @@ static void neopixel_reset(neopixel_t *p_neopixel)
  * T1L : 600ns
  * T1 : = (650ns + 600ns) = 1.25us = 800KHz
  *
- * RP2350 @150MHz動作時の1サイクル = 5ns
- *
- * gpio_put()は約5サイクル消費? NOPで要調整
+ * SPIが8MHz動作時1クロックは125ns
+ * SPI 8MHz(125ns)なら8bitデータでT0,T1が800KHzになる
  */
-static void gpio_tx_neopixel_data(uint32_t neopixel_data)
+static void neopixel_data_spi_tx(uint32_t neopixel_data)
 {
     uint32_t mask = 0x800000; // MSBから開始（bit23）
-    volatile uint32_t *gpio_set = &sio_hw->gpio_set;
-    volatile uint32_t *gpio_clr = &sio_hw->gpio_clr;
-    uint32_t pin_mask = 1u << s_p_neopixel->data_pin;
+    uint8_t spi_data_buf[NEOPIXEL_DATA_BIT];
 
-    // 割り込みマスク
-    _DI();
+    // 割り込み禁止
+    // _DI();
 
     // 24ビット分のデータを送信
     for (uint8_t i = 0; i < NEOPIXEL_DATA_BIT; i++)
     {
         // T1 (1bitデータ)
         if (neopixel_data & mask) {
-            // T1H : 650 (130サイクル)
-             *gpio_set = pin_mask;
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 125
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-
-            // T1L: 600ns (120サイクル)
-            *gpio_clr = pin_mask;
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 115
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 120
+            spi_data_buf[i] = T1_BIT_DATA;
         // T0 (0bitデータ)
         } else {
-            // T0H: 350ns (70サイクル) - gpio_put分(約5サイクル) = 65NOP
-            *gpio_set = pin_mask;
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 55
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 65
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 70
-
-            // Low期間: 850ns (180サイクル) - gpio_put分(約5サイクル) = 175NOP
-            *gpio_clr = pin_mask;
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 25
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 50
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 75
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 100
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 125
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 150
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 160
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP();
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 170
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 175
-            _NOP();_NOP();_NOP();_NOP();_NOP();_NOP(); // 180
+            spi_data_buf[i] = T0_BIT_DATA;
         }
         mask >>= 1; // 次のビットへ
     }
 
-    *gpio_clr = pin_mask;
-
     // 割り込み許可
-    _EI();
+    // _EI();
+
+    // SPIで送信
+    while(spi_is_writable(spi0) != true)
+    {
+        _WDT_CNT_RST();
+    };
+    spi_write_blocking(spi0, spi_data_buf, sizeof(spi_data_buf));
 }
-#endif // NEOPIXEL_CTRL_SW
+#endif // NEOPIXEL_CTRL_SPI
 
 static void set_neopixel_data_show(neopixel_t *p_neopixel)
 {
     uint8_t i;
-
-#ifdef NEOPIXEL_CTRL_SW
-    neopixel_reset(s_p_neopixel);
-#endif // NEOPIXEL_CTRL_PIO
 
     for ( i = 0; i < p_neopixel->led_cnt; i++)
     {
 #ifdef NEOPIXEL_CTRL_PIO
         pio_sm_put_blocking(s_pio, s_sm, p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb << 8u);
 #else
-        gpio_tx_neopixel_data(p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb);
+        neopixel_data_spi_tx(p_neopixel->p_pixel_grb_buf[i].grb_color.u32_grb);
 #endif // NEOPIXEL_CTRL_PIO
     }
+
+#ifdef NEOPIXEL_CTRL_SPI
+    // Neopixelのリセット 定格@280us以上
+    sleep_us(300);
+#endif
 }
 
 // H/W(PIO)でNeoPixelをコントロール

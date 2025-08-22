@@ -196,17 +196,18 @@
 #define I2C_1_SCL               19                  // I2C1 SCL (GPIO 19)
 
 // [SPI関連]
-#define SPI_0_PORT              spi1
+#define SPI_0_PORT              spi0
 #define SPI_1_PORT              spi1
-#define SPI_PORT                SPI_1_PORT
-#define SPI_BIT_RATE_1MHZ       (1 * 1000000)
-#define SPI_BIT_RATE_10MHZ      (10 * 1000000)
-#define SPI_BIT_RATE_20MHZ      (10 * 1000000)
-#define SPI_BIT_RATE_50MHZ      (50 * 1000000)
-#define SPI_BIT_RATE_60MHZ      (60 * 1000000)
-#define SPI_BIT_RATE_62MHZ      (62 * 1000000)
+#define SPI_PORT                SPI_0_PORT
+#define SPI_BIT_RATE_1MHZ       (1  *   100000)
+#define SPI_BIT_RATE_8MHZ       (8  *   100000)
+#define SPI_BIT_RATE_10MHZ      (10 *   1000000)
+#define SPI_BIT_RATE_20MHZ      (20 *   1000000)
+#define SPI_BIT_RATE_50MHZ      (50 *   1000000)
+#define SPI_BIT_RATE_60MHZ      (60 *   1000000)
+#define SPI_BIT_RATE_62MHZ      (62 *   1000000)
 #define SPI_BIT_RATE_62P5MHZ    (62.5 * 1000000)    // RP2350のSPIの最大レート 62.5MHz
-#define SPI_BIT_RATE            SPI_BIT_RATE_1MHZ
+#define SPI_BIT_RATE            SPI_BIT_RATE_8MHZ
 #define SPI_0_CS                9                   // SPI0 CS   (GPIO 9)
 #define SPI_0_SCK               6                   // SPI0 SCK  (GPIO 6)
 #define SPI_0_MISO              8                   // SPI0 MISO (GPIO 8)

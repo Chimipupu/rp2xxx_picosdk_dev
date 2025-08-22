@@ -12,10 +12,10 @@
 #define DRV_NEOPIXEL_H
 
 // #define NEOPIXEL_CTRL_PIO   // H/W(PIO)でNeoPixelをコントロール
-#define NEOPIXEL_CTRL_SW    // S/WでNeoPixelをコントロール
+#define NEOPIXEL_CTRL_SPI    // SPIでNeoPixelをコントロール
 
-#if !defined(NEOPIXEL_CTRL_PIO) && !defined(NEOPIXEL_CTRL_SW)
-#error Plz! define NEOPIXEL_CTRL_PIO or NEOPIXEL_CTRL_SW!  at drv_neopixel.h
+#if !defined(NEOPIXEL_CTRL_PIO) && !defined(NEOPIXEL_CTRL_SPI)
+#error Plz! define NEOPIXEL_CTRL_PIO or NEOPIXEL_CTRL_SPI!  at drv_neopixel.h
 #endif
 
 #define NEOPIXEL_DATA_BIT       24    // Neopixelのデータ 24bit
@@ -30,6 +30,15 @@
 #include "pico/stdlib.h"
 #include "neopixel.pio.h"
 #endif // NEOPIXEL_CTRL_PIO
+
+#ifdef NEOPIXEL_CTRL_SPI
+#include "pico/stdlib.h"
+#include "hardware/spi.h"
+#include "muc_rpxxx_util.h"
+
+#define T0_BIT_DATA     0xC0 // T0：0xC0
+#define T1_BIT_DATA     0xFC // T1：0xFC
+#endif // NEOPIXEL_CTRL_SPI
 
 // NeoPixelの色定義
 typedef enum {

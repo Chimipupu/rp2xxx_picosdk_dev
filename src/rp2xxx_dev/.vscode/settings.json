@@ -80,7 +80,8 @@
         "rp2040_reg.h": "c",
         "stdlib.h": "c",
         "pio.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "spi.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

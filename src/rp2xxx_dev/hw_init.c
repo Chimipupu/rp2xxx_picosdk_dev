@@ -173,12 +173,6 @@ static void hw_gpio_init(void)
     gpio_put(PCB_LED_2_PIN, PORT_OFF);
 #endif
 
-#ifdef NEOPIXEL_CTRL_SW
-    gpio_set_function(PCB_NEOPIXEL_PIN, GPIO_FUNC_SIO);
-    gpio_set_dir(PCB_NEOPIXEL_PIN, GPIO_OUT);
-    gpio_put(PCB_NEOPIXEL_PIN, PORT_ON);
-#endif // NEOPIXEL_CTRL_SW
-
     // [基板ボタン]
 #if defined(PCB_BTN_PIN)
     gpio_init(PCB_BTN_PIN);
@@ -234,23 +228,32 @@ static void hw_pwm_init(void)
 
 static void hw_i2c_init(void)
 {
+#if 0
     // I2C0初期化
     i2c_init(I2C_0_PORT, I2C_BIT_RATE);
     gpio_set_function(I2C_0_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_0_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_0_SDA);
     gpio_pull_up(I2C_0_SCL);
+#endif
 
+#if 0
     // I2C1初期化
     i2c_init(I2C_1_PORT, I2C_BIT_RATE);
     gpio_set_function(I2C_1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_1_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_1_SDA);
     gpio_pull_up(I2C_1_SCL);
+#endif
 }
 
 static void hw_spi_init(void)
 {
+#ifdef NEOPIXEL_CTRL_SPI
+    spi_init(SPI_0_PORT, SPI_BIT_RATE_8MHZ);
+    spi_set_format(SPI_0_PORT, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+    gpio_set_function(PCB_NEOPIXEL_PIN, GPIO_FUNC_SPI);
+#else
     // SPI0初期化
     spi_init(SPI_0_PORT, SPI_BIT_RATE);
     gpio_set_function(SPI_0_CS,   GPIO_FUNC_SIO);
@@ -259,7 +262,9 @@ static void hw_spi_init(void)
     gpio_set_function(SPI_0_MOSI, GPIO_FUNC_SPI);
     gpio_set_dir(SPI_0_CS, GPIO_OUT);
     gpio_put(SPI_0_CS, 1);
+#endif // NEOPIXEL_CTRL_SPI
 
+#if 0
     // SPI1初期化
     spi_init(SPI_1_PORT, SPI_BIT_RATE);
     gpio_set_function(SPI_1_CS,   GPIO_FUNC_SIO);
@@ -268,6 +273,7 @@ static void hw_spi_init(void)
     gpio_set_function(SPI_1_MOSI, GPIO_FUNC_SPI);
     gpio_set_dir(SPI_1_CS, GPIO_OUT);
     gpio_put(SPI_1_CS, 1);
+#endif
 }
 
 #if defined(MCU_RP2350)
@@ -319,11 +325,13 @@ static void hw_uart_init(void)
     gpio_set_function(UART_0_RX, GPIO_FUNC_UART);
     uart_puts(UART_0_PORT, "Hello, from UART0!\n");
 
+#if 0
     // UART1初期化(115200bps 8N1)
     uart_init(UART_1_PORT, UART_BAUD_RATE);
     gpio_set_function(UART_1_TX, GPIO_FUNC_UART);
     gpio_set_function(UART_1_RX, GPIO_FUNC_UART);
     uart_puts(UART_1_PORT, "Hello, from UART1!\n");
+#endif
 }
 
 static void hw_adc_init(void)
