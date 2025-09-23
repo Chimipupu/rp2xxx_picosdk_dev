@@ -102,7 +102,7 @@ void emc_test(void)
         flame.BIT.CMD = EMC_CMD_TEST_REQ;
         flame.BIT.LEN = 0;
         flame.BIT.DATA = 0;
-        emc_rx_flame(&flame);
+        emc_tx_flame(&flame);
 
         if(flame.DWORD != 0) {
             if(flame.BIT.CMD == EMC_CMD_TEST_RES) {

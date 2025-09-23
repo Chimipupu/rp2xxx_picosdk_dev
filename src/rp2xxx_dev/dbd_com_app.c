@@ -278,7 +278,9 @@ static void cmd_mt_test(dbg_cmd_args_t *p_args)
 static void cmd_mct_test(dbg_cmd_args_t *p_args)
 {
 #ifdef DEBUG_EXT_MCU_COM_USE
+    // printf("[DEBUG] EMC Test\n");
     emc_test();
+    // printf("[DEBUG] EMC Test End\n");
 #endif // DEBUG_EXT_MCU_COM_USE
 }
 
