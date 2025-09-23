@@ -17,8 +17,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define SM_FLAME_DATA_BUF_SIZE              0xFF
-
 #define CORE_1_WUP_RESULT_DATA              0x1234
 #define MULTI_CORE_TEST_DATA                0xABCD
 #define PROC_NEOPIXEL_FADE                  0xAAAA
@@ -33,27 +31,6 @@ typedef enum {
     SM_TEST_PROC    = 0xE0,
 } e_state_machine;
 
-// ステートマシンフレームコマンド
-typedef enum {
-    SM_CMD_NONE         = 0x00, // コマンドなし
-    SM_CMD_TEST_REQ     = 0xE0, // テスト要求コマンド
-    SM_CMD_TEST_RES     = 0xE2, // テスト要求応答コマンド
-} e_sm_cmd;
-
-// ステートマシンフレーム構造体
-typedef union {
-    uint32_t DWORD;
-    struct {
-        uint32_t DATA:16;  // データ         ... bit[15:0]
-        uint32_t LEN:8;    // データ長(Word) ... bit[23:16]
-        uint32_t CMD:8;    // コマンド       ... bit[31:24]
-    }BIT;
-} SM_FLAME_T;
-
-void sm_flame_tx(SM_FLAME_T *p_flame);
-void sm_flame_rx(SM_FLAME_T *p_flame);
-void sm_master_init(void);
-void sm_master_main(void);
 void sm_slave_init(void);
 void sm_slave_main(void);
 

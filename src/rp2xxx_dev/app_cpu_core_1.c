@@ -12,14 +12,15 @@
 #include "app_main.h"
 #include "muc_rpxxx_util.h"
 #include "state_machine.h"
+#include "ext_mcu_com.h"
 
-// #define DEBUG_DBG_COM_USE
+#define DEBUG_DBG_COM_USE
 
 #ifdef DEBUG_DBG_COM_USE
 #include "dbg_com.h"
 #endif // DEBUG_DBG_COM_USE
 
-#if 0
+#if 1
 #include "drv_neopixel.h"
 neopixel_t s_neopixel;
 static rgb_color_t s_rgb_buf[NEOPIXEL_LED_CNT] = {0};
@@ -35,10 +36,10 @@ void app_core_1_main(void)
 {
     g_core_num_core_1 = get_core_num();
 
-    // ステートマシン初期化
-    sm_master_init();
+    // 外部マイコン間通信 初期化
+    emc_init();
 
-#if 0
+#if 1
     // NeoPixel初期化
     s_neopixel.led_cnt = NEOPIXEL_LED_CNT;
     s_neopixel.data_pin = PCB_NEOPIXEL_PIN;
@@ -58,8 +59,8 @@ void app_core_1_main(void)
 
     while(1)
     {
-        // ステートマシン メイン
-        sm_master_main();
+        // 外部マイコン間通信 メイン
+        emc_main();
 
 #ifdef DEBUG_DBG_COM_USE
         // デバッグモニタ メイン

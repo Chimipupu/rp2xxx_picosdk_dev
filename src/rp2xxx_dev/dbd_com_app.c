@@ -18,7 +18,7 @@
 #include "app_math.h"
 #include "muc_rpxxx_util.h"
 #include "state_machine.h"
-
+#include "ext_mcu_com.h"
 #include "drv_neopixel.h"
 extern neopixel_t s_neopixel;
 
@@ -277,7 +277,9 @@ static void cmd_mt_test(dbg_cmd_args_t *p_args)
 
 static void cmd_mct_test(dbg_cmd_args_t *p_args)
 {
-    // TODO : マルチコアテスト
+#ifdef DEBUG_EXT_MCU_COM_USE
+    emc_test();
+#endif // DEBUG_EXT_MCU_COM_USE
 }
 
 static void cmd_pi_calc(dbg_cmd_args_t *p_args)

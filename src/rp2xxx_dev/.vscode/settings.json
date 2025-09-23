@@ -83,7 +83,9 @@
         "stdbool.h": "c",
         "spi.h": "c",
         "sstream": "c",
-        "hw_init.h": "c"
+        "hw_init.h": "c",
+        "state_machine.h": "c",
+        "ext_mcu_com.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

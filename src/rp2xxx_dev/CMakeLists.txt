@@ -45,6 +45,7 @@ add_executable(rp2xxx_dev
             dbg_com.c
             dbd_com_app.c
             muc_rpxxx_util.c
+            ext_mcu_com.c
             state_machine.c
             )
 
