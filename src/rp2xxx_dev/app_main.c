@@ -11,7 +11,6 @@
 #include "app_main.h"
 #include "app_cpu_core_0.h"
 #include "app_cpu_core_1.h"
-#include "dbg_com.h"
 #include "muc_rpxxx_util.h"
 
 /**

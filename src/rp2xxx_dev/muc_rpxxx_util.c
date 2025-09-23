@@ -186,10 +186,10 @@ void hardware_calc_sha256(const uint8_t *p_data_buf, size_t len, uint8_t *p_hash
 
     sha256_wait_valid_blocking();
 
-    // (DEBUG)デバッグしてわかったこと
+    // NOTE:デバッグしてわかったこと
     // リザルトが「0x6A09E667BB67AE853C6EF372A54FF53A510E527F9B05688C1F83D9AB5BE0CD19」
     // -> これはSHA-256の初期化ベクトル（IV）で
-    // リザルトこれがだとまだH/Wがハッシュを計算できてない！
+    // これがリザルトだとまだH/Wがハッシュを計算できてない！
     sha256_result_t result;
     sha256_get_result(&result, SHA256_BIG_ENDIAN);
     memcpy(p_hash_buf, result.bytes, 32);

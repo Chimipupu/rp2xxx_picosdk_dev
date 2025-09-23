@@ -17,6 +17,7 @@
 #include "app_main.h"
 #include "app_math.h"
 #include "muc_rpxxx_util.h"
+#include "state_machine.h"
 
 #include "drv_neopixel.h"
 extern neopixel_t s_neopixel;
@@ -276,12 +277,7 @@ static void cmd_mt_test(dbg_cmd_args_t *p_args)
 
 static void cmd_mct_test(dbg_cmd_args_t *p_args)
 {
-    uint32_t data = 0;
-
-    // Core1からCore0にテストデータを投げる
-    data = MULTI_CORE_TEST_DATA;
-    set_multicore_fifo(data);
-    printf("[Core 1] TX FIFO Data to Core 0 : 0x%08X\n", data);
+    // TODO : マルチコアテスト
 }
 
 static void cmd_pi_calc(dbg_cmd_args_t *p_args)

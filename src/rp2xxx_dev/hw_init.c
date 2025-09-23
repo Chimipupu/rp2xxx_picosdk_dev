@@ -223,33 +223,31 @@ static void hw_interp_init(void)
 
 static void hw_pwm_init(void)
 {
+    // TODO:PWMの初期化実装
     _NOP();
 }
 
 static void hw_i2c_init(void)
 {
-#if 0
     // I2C0初期化
     i2c_init(I2C_0_PORT, I2C_BIT_RATE);
     gpio_set_function(I2C_0_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_0_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_0_SDA);
     gpio_pull_up(I2C_0_SCL);
-#endif
 
-#if 0
     // I2C1初期化
     i2c_init(I2C_1_PORT, I2C_BIT_RATE);
     gpio_set_function(I2C_1_SDA, GPIO_FUNC_I2C);
     gpio_set_function(I2C_1_SCL, GPIO_FUNC_I2C);
     gpio_pull_up(I2C_1_SDA);
     gpio_pull_up(I2C_1_SCL);
-#endif
 }
 
 static void hw_spi_init(void)
 {
 #ifdef NEOPIXEL_CTRL_SPI
+    // SPI0はNeopixelで使ってる
     spi_init(SPI_0_PORT, SPI_BIT_RATE_8MHZ);
     spi_set_format(SPI_0_PORT, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
     gpio_set_function(PCB_NEOPIXEL_PIN, GPIO_FUNC_SPI);
@@ -264,7 +262,7 @@ static void hw_spi_init(void)
     gpio_put(SPI_0_CS, 1);
 #endif // NEOPIXEL_CTRL_SPI
 
-#if 0
+#if 1
     // SPI1初期化
     spi_init(SPI_1_PORT, SPI_BIT_RATE);
     gpio_set_function(SPI_1_CS,   GPIO_FUNC_SIO);
@@ -440,7 +438,7 @@ static void hw_dma_init(void)
     g_dma_ch_info[0].p_dst_addr = (char *)s_dma_dst_buf;
     hw_dma_config(g_dma_ch_info[0], true);
 
-    // DNA CH1
+    // DMA CH1
     g_dma_ch_info[1].tx_size = DMA_SIZE_8;
     g_dma_ch_info[1].tx_cnt = count_of(s_dma_test_src_buf);
     g_dma_ch_info[1].p_src_addr = (char *)s_dma_test_src_buf;

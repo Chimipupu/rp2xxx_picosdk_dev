@@ -45,6 +45,7 @@ add_executable(rp2xxx_dev
             dbg_com.c
             dbd_com_app.c
             muc_rpxxx_util.c
+            state_machine.c
             )
 
 pico_set_program_name(rp2xxx_dev "rp2xxx_dev")

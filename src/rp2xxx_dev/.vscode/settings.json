@@ -82,7 +82,8 @@
         "pio.h": "c",
         "stdbool.h": "c",
         "spi.h": "c",
-        "sstream": "c"
+        "sstream": "c",
+        "hw_init.h": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }
