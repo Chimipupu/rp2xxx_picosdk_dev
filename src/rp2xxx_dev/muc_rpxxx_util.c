@@ -97,6 +97,8 @@ void trang_gen_rand_num_u32(uint32_t *p_rand_buf, uint32_t gen_num_cnt)
         for (uint32_t i = 0; i < gen_num_cnt; i++)
         {
             p_rand_buf[i] = get_rand_32();
+            // NOTE:データシートにTRNGの乱数生成を約2ms待てって書いてたから待つ
+            sleep_ms(2);
         }
     }
 }
