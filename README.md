@@ -4,15 +4,37 @@
 
 ## H/W
 
-### RP2040基板
-
-- 📍[VCC-GND YD-RP2040](https://www.aliexpress.us/item/1005004004120604.html?gatewayAdapt=4itemAdapt)🔗
-- マイコン ... 型番:`RP2040`
-  - CPU ... `Arm Cortex-M0+` x2コア(※デュアルコアCPU)
-  - ROM ... 16MB
+- マイコン ... 型番:`RP2350`
+  - CPU
+    - `Arm Cortex-M33` x2コア
+    - `RISC-V Hazard3 (RV32IMAC)` x2コア
+  - Clock ... 150MHz
+  - ROM ... 4MB or 16MB
   - RAM ... 520KB
+  - FPU ... 倍精度
+  - DMA ... 16本
+  - I2C ... 2ch
+  - SPI ... 2ch
+  - UART ... 2ch
+  - GPIO ... 30 or 48本
+  - PWM ... 24本
+  - タイマー
+    - 64bitタイマー
+      - 汎用 : x2本 (1usカウント)
+        - アラーム : 4つまで
+      - AON Timer : x1本
+        - 常時駆動の64bitタイマ
+        - LPOSCの32.768KHz(精度1%)で@1sカウント
+  - SysTick : 24bit x1本
+  - WDT : 24bit x1本
+  - RTC : なし(N/A)
+  - PIO ... x12 State Machine
+  - HSTX ... DVI互換I/F ※音は出せない
+  - TRNG ... H/Wの真性乱数生成器
+  - H/W AES
 
 ### RP2350基板
+
 - 📍[Raspberry Pi Pico 2](https://www.raspberrypi.com/products/raspberry-pi-pico-2/)🔗
 - 📍[Raspberry Pi Pico 2 W](https://www.raspberrypi.com/products/raspberry-pi-pico-2w)🔗
 - 📍[WeActStudio RP2350B](https://github.com/WeActStudio/WeActStudio.RP2350BCoreBoard)🔗
@@ -21,26 +43,14 @@
 - 📍[Waveshare RP2350-PiZero](https://www.waveshare.com/wiki/RP2350-PiZero)🔗
 - 📍[Waveshare RP2350-Zero](https://www.waveshare.com/wiki/RP2350-Zero)🔗
 
-- マイコン ... 型番:`RP2350`
-  - CPU ... `Arm Cortex-M33` x2コア(※デュアルコアCPU)
+### RP2040基板
+
+- マイコン ... 型番:`RP2040`
+  - CPU ... `Arm Cortex-M0+` x2コア(※デュアルコアCPU)
   - ROM ... 4MB or 16MB
-  - RAM ... 520KB
-  - FPU ... 倍精度FPU
-  - UART ... 2ch
-  - SPI ... 2ch
-  - I2C ... 2ch
-  - GPIO ... 30 or 48本
-  - DMA ... 16本
-  - タイマー
-    - SysTick : 24bit x1本
-    - WDT : 24bit x1本
-    - RTC : なし(N/A)
-    - 64bitタイマー
-      - 汎用 : x2本 (1usカウント)
-        - アラーム : 4つまで
-      - AON Timer : x1本
-        - 常時駆動の64bitタイマ
-        - LPOSCの32.768KHz(精度1%)で@1sカウント
+  - RAM ... 264KB
+
+- 📍[VCC-GND YD-RP2040](https://www.aliexpress.us/item/1005004004120604.html?gatewayAdapt=4itemAdapt)🔗
 
 ## S/W
 
@@ -50,7 +60,6 @@
   - コンパイルオプション
     - 最適化
       - `-O0` (最適化なし)
-      - `-O3` (最適化最大)
       - `-Os` (サイズ優先)
       - `-Og` (デバッグ)
     - 浮動小数点(※RP2350がマイコンのとき)

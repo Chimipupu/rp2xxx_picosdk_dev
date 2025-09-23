@@ -30,7 +30,7 @@ static void cmd_mt_test(dbg_cmd_args_t *p_args);
 static void cmd_mct_test(dbg_cmd_args_t *p_args);
 static void cmd_pi_calc(dbg_cmd_args_t *p_args);
 #if defined(MCU_RP2350)
-static void cmd_rnd(dbg_cmd_args_t *p_args);
+static void cmd_rng(dbg_cmd_args_t *p_args);
 static void cmd_sha(dbg_cmd_args_t *p_args);
 #endif
 static void cmd_rst(dbg_cmd_args_t *p_args);
@@ -44,6 +44,8 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args);
 
 static int get_neopixel_color_from_name(const char* name);
 static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
+
+static uint32_t s_rng_buf[256];
 
 // タイマー状態
 static timer_state_t s_timer_alarn_state[TIMER_MAX_ALARMS]; // タイマーアラームのステート
@@ -65,7 +67,7 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
     //  RTC ... (RP2040 = H/W RTC, RP2350 = AON Timer)
     {"rtc",     CMD_RTC,        &cmd_rtc,         0,    1,    "RTC. exp(rtc g | rtc s YYYY/MM/DD HH:MM:SS)"},
 #if defined(MCU_RP2350)
-    {"rnd",     CMD_RND,        &cmd_rnd,         0,    1,    "Generate Random Number, using H/W TRNG"},
+    {"rng",     CMD_RNG,        &cmd_rng,         0,    1,    "Generate True Random Number, using H/W TRNG"},
     {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
     {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math Calc Test"},
@@ -346,9 +348,11 @@ static void cmd_sha(dbg_cmd_args_t *p_args)
     show_mem_dump((uint32_t)hash_buf, 64);
 }
 
-static void cmd_rnd(dbg_cmd_args_t *p_args)
+static void cmd_rng(dbg_cmd_args_t *p_args)
 {
-    int32_t i, count;
+    uint8_t i;
+    uint8_t cnt;
+    int count;
 
     if (p_args->argc < 2 || p_args->argc > 2) {
         printf("Usage: rnd <count>\n");
@@ -356,23 +360,20 @@ static void cmd_rnd(dbg_cmd_args_t *p_args)
     }
 
     count = atoi(p_args->p_argv[1]);
-    uint32_t rand_buf[count];
-    memset(rand_buf, 0, sizeof(rand_buf));
-    if (count <= 0) {
-        printf("Error: Invalid count. Must be positive.\n");
+    if ((count < 0) || (count > 255)) {
+        printf("Error: Invalid count. Must be [count ...  0 ~ 255]\n");
         return;
     }
 
     // TRNGで真性乱数を生成
-    printf("\nTRANG gen random num cnt:%d\n", count);
-    trang_gen_rand_num_u32(rand_buf, count);
+    memset(&s_rng_buf[0], 0, sizeof(s_rng_buf));
+    printf("\nGenerate Random Num = %d\n", count);
+    trang_gen_rand_num_u32(&s_rng_buf[0], count);
 
-#if 1
     for (i = 0; i < count; i++)
     {
-        printf("[DEBUG]generated rand num(%d): %u\n", i, rand_buf[i]);
+        printf("[DEBUG] RNG[%d] ... HEX : 0x%08X, DEC : %lu\n", i, s_rng_buf[i], s_rng_buf[i]);
     }
-#endif
 
     printf("\n");
 }

@@ -89,6 +89,7 @@ __attribute__( ( always_inline ) ) static inline void _WDT_CNT_RST(void)
 bool aon_set_time_from_string(const char *p_datetime_str);
 void aon_current_time_print(void);
 void trang_gen_rand_num_u32(uint32_t *p_rand_buf, uint32_t gen_num_cnt);
+// void trang_gen_rand_num_u64(uint64_t *p_rand_buf, uint64_t gen_num_cnt);
 void sha256_padding(const uint8_t *p_src_buf, size_t len, uint8_t *p_dst_buf, size_t *p_out_len);
 void hardware_calc_sha256(const uint8_t *p_data_buf, size_t len, uint8_t *p_hash_buf);
 #endif
