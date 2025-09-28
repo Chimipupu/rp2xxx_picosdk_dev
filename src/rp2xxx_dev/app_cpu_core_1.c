@@ -26,6 +26,8 @@ neopixel_t s_neopixel;
 static rgb_color_t s_rgb_buf[NEOPIXEL_LED_CNT] = {0};
 #endif
 
+#include "drv_lora_e220.h"
+
 volatile uint32_t g_core_num_core_1 = 0xFF;
 
 /**
@@ -60,12 +62,16 @@ void app_core_1_main(void)
     while(1)
     {
         // 外部マイコン間通信 メイン
-        emc_main();
+        // emc_main();
 
 #ifdef DEBUG_DBG_COM_USE
         // デバッグモニタ メイン
         dbg_com_main();
 #endif // DEBUG_DBG_COM_USE
+
+        // LoRa メイン
+        printf("[DEBUG] LoRa\r\n");
+        app_lora_e220_main();
 
         _WDT_CNT_RST();
     }

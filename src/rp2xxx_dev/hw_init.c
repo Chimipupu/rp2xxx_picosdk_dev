@@ -11,6 +11,7 @@
 
 #include "hw_init.h"
 #include "drv_neopixel.h"
+#include "drv_lora_e220.h"
 
 extern volatile uint32_t g_core_num_core_0;
 extern volatile uint32_t g_core_num_core_1;
@@ -185,6 +186,10 @@ static void hw_gpio_init(void)
                                         &btn_ex_irq_handler // 割り込みハンドラ
                                         );
 #endif
+
+#ifdef LORA_E220_USE
+    drv_lora_e220_init();
+#endif // LORA_E220_USE
 }
 
 static void hw_pio_init(void)
@@ -317,18 +322,20 @@ static void hw_timer_init(void)
 
 static void hw_uart_init(void)
 {
+#if 0
     // UART0初期化(115200bps 8N1)
-    uart_init(UART_0_PORT, UART_BAUD_RATE);
+    uart_init(UART_0_PORT, UART_0_BAUD_RATE);
     gpio_set_function(UART_0_TX, GPIO_FUNC_UART);
     gpio_set_function(UART_0_RX, GPIO_FUNC_UART);
     uart_puts(UART_0_PORT, "Hello, from UART0!\n");
+#endif
 
-#if 0
+#if 1
     // UART1初期化(115200bps 8N1)
-    uart_init(UART_1_PORT, UART_BAUD_RATE);
+    uart_init(UART_1_PORT, UART_1_BAUD_RATE);
     gpio_set_function(UART_1_TX, GPIO_FUNC_UART);
     gpio_set_function(UART_1_RX, GPIO_FUNC_UART);
-    uart_puts(UART_1_PORT, "Hello, from UART1!\n");
+    // uart_puts(UART_1_PORT, "Hello, from UART1!\n");
 #endif
 }
 

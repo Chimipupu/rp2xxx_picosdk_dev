@@ -85,7 +85,9 @@
         "sstream": "c",
         "hw_init.h": "c",
         "state_machine.h": "c",
-        "ext_mcu_com.h": "c"
+        "ext_mcu_com.h": "c",
+        "dma.h": "c",
+        "compare": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

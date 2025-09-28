@@ -38,6 +38,7 @@ pico_sdk_init()
 add_executable(rp2xxx_dev
             hw_init.c
             drv_neopixel.c
+            drv_lora_e220.c
             app_cpu_core_0.c
             app_cpu_core_1.c
             app_main.c

@@ -218,7 +218,7 @@
 #define SPI_1_MISO              12                  // SPI1 MISO (GPIO 12)
 #define SPI_1_MOSI              11                  // SPI1 MOSI (GPIO 11)
 
-// UART
+// [UART関連]
 #define UART_0_PORT             uart0
 #define UART_1_PORT             uart1
 #define UART_PORT               UART_0_PORT
@@ -232,10 +232,12 @@
 #define UART_BAUD_RATE_460800   460800
 #define UART_BAUD_RATE_921600   921600
 #define UART_BAUD_RATE          UART_BAUD_RATE_921600
+#define UART_0_BAUD_RATE        UART_BAUD_RATE_115200
+#define UART_1_BAUD_RATE        UART_BAUD_RATE_9600
 #define UART_0_TX               0                   // UART0 TX (GPIO 0)
-#define UART_0_RX               1                   // UART0 TX (GPIO 1)
+#define UART_0_RX               1                   // UART0 RX (GPIO 1)
 #define UART_1_TX               4                   // UART1 TX (GPIO 4)
-#define UART_1_RX               5                   // UART1 TX (GPIO 5)
+#define UART_1_RX               5                   // UART1 RX (GPIO 5)
 
 #define GPIO_PIN_0              0
 #define GPIO_PIN_1              1
