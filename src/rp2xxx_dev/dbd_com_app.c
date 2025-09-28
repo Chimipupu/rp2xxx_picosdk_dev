@@ -20,7 +20,6 @@
 #include "state_machine.h"
 #include "ext_mcu_com.h"
 #include "drv_neopixel.h"
-#include "drv_lora_e220.h"
 
 extern neopixel_t s_neopixel;
 
@@ -44,7 +43,6 @@ static void cmd_mem_dump(dbg_cmd_args_t *p_args);
 static void cmd_i2c(dbg_cmd_args_t *p_args);
 static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
-static void cmd_lora(dbg_cmd_args_t *p_args);
 
 static int get_neopixel_color_from_name(const char* name);
 static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
@@ -74,7 +72,6 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
     {"rng",     CMD_RNG,        &cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
     {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
-    {"lora",    CMD_LORA,       &cmd_lora,        0,    0,    "LoRa Module Test"},
     {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math Calc Test"},
     {"mct",     CMD_MCT,        &cmd_mct_test,    0,    0,    "Multi Core Test"},
 };
@@ -773,15 +770,4 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
             return;
         }
     }
-}
-
-/**
- * @brief NeoPixel制御コマンド関数
- * 
- * @param p_args 
- */
-static void cmd_lora(dbg_cmd_args_t *p_args)
-{
-    printf("[DEBUG] LoRa CMD\r\n");
-    app_lora_e220_main();
 }

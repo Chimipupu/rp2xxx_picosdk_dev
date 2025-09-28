@@ -11,7 +11,6 @@
 
 #include "hw_init.h"
 #include "drv_neopixel.h"
-#include "drv_lora_e220.h"
 
 extern volatile uint32_t g_core_num_core_0;
 extern volatile uint32_t g_core_num_core_1;
@@ -186,10 +185,6 @@ static void hw_gpio_init(void)
                                         &btn_ex_irq_handler // 割り込みハンドラ
                                         );
 #endif
-
-#ifdef LORA_E220_USE
-    drv_lora_e220_init();
-#endif // LORA_E220_USE
 }
 
 static void hw_pio_init(void)
