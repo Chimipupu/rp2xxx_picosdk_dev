@@ -50,9 +50,9 @@
 #include "hardware/interp.h"
 // #define PCB_PICO2                             // Raspberry Pi Pico 2
 // #define PCB_PICO2W                            // Raspberry Pi Pico 2 W
-// #define PCB_WEACT_RP2350A_V10                 // WeAct RP2350A-V10
+#define PCB_WEACT_RP2350A_V10                 // WeAct RP2350A-V10
 // #define PCB_WEACT_RP2350A_V20                 // WeAct RP2350A-V20
-#define PCB_WEACT_RP2350B                     // WeAct RP2350B
+// #define PCB_WEACT_RP2350B                     // WeAct RP2350B
 // #define PCB_RP2350_PIZERO                     // Waveshare RP2350-PiZero
 // #define PCB_RP2350_ZERO                       // Waveshare RP2350-Zero
 #endif

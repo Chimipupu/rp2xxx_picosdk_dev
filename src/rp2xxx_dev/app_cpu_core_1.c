@@ -69,10 +69,6 @@ void app_core_1_main(void)
         dbg_com_main();
 #endif // DEBUG_DBG_COM_USE
 
-        // LoRa メイン
-        printf("[DEBUG] LoRa\r\n");
-        app_lora_e220_main();
-
         _WDT_CNT_RST();
     }
 }

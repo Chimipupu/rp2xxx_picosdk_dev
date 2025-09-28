@@ -323,7 +323,7 @@ static void hw_timer_init(void)
 static void hw_uart_init(void)
 {
 #if 0
-    // UART0初期化(115200bps 8N1)
+    // UART0初期化(115200 bps, 8N1)
     uart_init(UART_0_PORT, UART_0_BAUD_RATE);
     gpio_set_function(UART_0_TX, GPIO_FUNC_UART);
     gpio_set_function(UART_0_RX, GPIO_FUNC_UART);
@@ -331,7 +331,7 @@ static void hw_uart_init(void)
 #endif
 
 #if 1
-    // UART1初期化(115200bps 8N1)
+    // UART1初期化(9600 bps, 8N1)
     uart_init(UART_1_PORT, UART_1_BAUD_RATE);
     gpio_set_function(UART_1_TX, GPIO_FUNC_UART);
     gpio_set_function(UART_1_RX, GPIO_FUNC_UART);

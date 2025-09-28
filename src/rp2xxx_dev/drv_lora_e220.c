@@ -32,13 +32,13 @@ const uint8_t g_test_data[] = {0xAB, 0xCD, 0xEF};
  * @param p_data データ長
  * @return uint8_t 0x00...OK, 0xFF...データサイズ超過エラー
  */
-uint8_t drv_lora_e220_broad_cast_tx(uint8_t ch, uint8_t data_size, uint8_t *p_data)
+uint8_t drv_lora_e220_broad_cast_tx(uint8_t ch, uint8_t data_size, const uint8_t *p_data)
 {
     uint8_t *p;
     uint8_t i;
     uint8_t ret = 0xFF;
 
-    p = p_data;
+    p = (uint8_t *) p_data;
 
     if(data_size <= LORA_E220_PACKET_SIZE) {
         uart_putc(UART_1_PORT, 0xFF);
@@ -49,6 +49,8 @@ uint8_t drv_lora_e220_broad_cast_tx(uint8_t ch, uint8_t data_size, uint8_t *p_da
             uart_putc(UART_1_PORT, *p);
             p++;
         }
+        uart_puts(UART_1_PORT, "\r\n");
+
         ret = 0x00;
     }
 
@@ -82,6 +84,6 @@ void drv_lora_e220_init(void)
 void app_lora_e220_main(void)
 {
 #ifdef DEBUG_LORA_E220
-    drv_lora_e220_broad_cast_tx(0x01, sizeof(g_test_data), &s_tx_buf[0]);
+    drv_lora_e220_broad_cast_tx(0x01, sizeof(g_test_data), &g_test_data[0]);
 #endif // DEBUG_LORA_E220
 }

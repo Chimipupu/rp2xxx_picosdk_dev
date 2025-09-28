@@ -25,7 +25,7 @@
 #define LORA_E220_PACKET_SIZE   200   // E220-900T22のパケットサイズ
 #define LORA_TX_BUF_SIZE        LORA_E220_PACKET_SIZE
 
-uint8_t drv_lora_e220_broad_cast_tx(uint8_t ch, uint8_t data_size, uint8_t *p_data);
+uint8_t drv_lora_e220_broad_cast_tx(uint8_t ch, uint8_t data_size, const uint8_t *p_data);
 void drv_lora_e220_init(void);
 void app_lora_e220_main(void);
 
