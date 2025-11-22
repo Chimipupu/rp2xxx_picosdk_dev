@@ -469,7 +469,7 @@ int main()
     hw_dma_init();
 
     // UART初期化
-    hw_uart_init();
+    // hw_uart_init();
 
 #if defined(MCU_RP2350)
     // チップのパッケージ取得

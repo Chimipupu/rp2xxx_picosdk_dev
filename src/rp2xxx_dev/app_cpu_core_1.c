@@ -18,6 +18,9 @@
 
 #ifdef DEBUG_DBG_COM_USE
 #include "dbg_com.h"
+extern const dbg_cmd_info_t g_cmd_tbl[];
+extern const size_t g_tbl_cmd_num;
+dbg_com_config_t g_dbgc_config;
 #endif // DEBUG_DBG_COM_USE
 
 #if 1
@@ -26,8 +29,8 @@ neopixel_t s_neopixel;
 static rgb_color_t s_rgb_buf[NEOPIXEL_LED_CNT] = {0};
 #endif
 
-
 volatile uint32_t g_core_num_core_1 = 0xFF;
+
 
 /**
  * @brief CPU Core1のアプリメイン関数
@@ -55,7 +58,9 @@ void app_core_1_main(void)
 
 #ifdef DEBUG_DBG_COM_USE
     // デバッグモニタ初期化
-    dbg_com_init();
+    g_dbgc_config.p_cmd_tbl = &g_cmd_tbl[0];
+    g_dbgc_config.total_cmd = g_tbl_cmd_num;
+    dbg_com_init(&g_dbgc_config);
 #endif // DEBUG_DBG_COM_USE
 
     while(1)

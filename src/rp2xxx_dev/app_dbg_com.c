@@ -10,7 +10,23 @@
  */
 
 #include "dbg_com.h"
-#include "ansi_esc.h"
+
+// C/C++ Std Include
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <math.h>
+
+// SDK Include
+#include "pico/version.h"
+#include "hardware/clocks.h"
+#include "hardware/watchdog.h"
+#include "hardware/timer.h"
+#include "pico/time.h"
+#include "hardware/gpio.h"
+#include "hardware/i2c.h"
+
 #include "muc_rpxxx_util.h"
 #include "pcb_def.h"
 #include "hw_init.h"
@@ -21,11 +37,27 @@
 #include "ext_mcu_com.h"
 #include "drv_neopixel.h"
 
+// GPIOの最大本数
+#if defined(PCB_WEACT_RP2350A_V10) || defined(PCB_WEACT_RP2350B)
+// RP2350B (QFN-80)
+#define GPIO_MAX_PIN_NUM        48
+#else
+// RP2350A (QFN-60)
+#define GPIO_MAX_PIN_NUM        30
+#endif
+
+// 期待値: tan(355/226)
+#define TAN_355_226_EXPECTED    -7497258.18532
+
+// [タイマー関連定義]
+#define TIMER_MAX_SECONDS       3600   // 最大1時間
+// タイマーの最大アラーム数
+#define TIMER_MAX_ALARMS        PICO_TIME_DEFAULT_ALARM_POOL_MAX_TIMERS
+
 extern neopixel_t s_neopixel;
 
 static void dbg_com_init_msg(dbg_cmd_args_t *p_args);
 
-void cmd_help(dbg_cmd_args_t *p_args);
 static void cmd_cls(dbg_cmd_args_t *p_args);
 static void cmd_system(dbg_cmd_args_t *p_args);
 static void cmd_mt_test(dbg_cmd_args_t *p_args);
@@ -39,7 +71,6 @@ static void cmd_rst(dbg_cmd_args_t *p_args);
 static void cmd_timer(dbg_cmd_args_t *p_args);
 static void cmd_rtc(dbg_cmd_args_t *p_args);
 static void cmd_gpio(dbg_cmd_args_t *p_args);
-static void cmd_mem_dump(dbg_cmd_args_t *p_args);
 static void cmd_i2c(dbg_cmd_args_t *p_args);
 static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
@@ -49,57 +80,29 @@ static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_
 
 static uint32_t s_rng_buf[256];
 
-// タイマー状態
-static timer_state_t s_timer_alarn_state[TIMER_MAX_ALARMS]; // タイマーアラームのステート
-static uint8_t s_available_tim_cnt = TIMER_MAX_ALARMS;      // 利用可能なタイマーアラームの登録順序の数
-
 // コマンドテーブル
 const dbg_cmd_info_t g_cmd_tbl[] = {
-//  | 文字列 | 種類 | コールバック関数 | 最小引数 | 最大引数 | 説明 |
-    {"help",    CMD_HELP,       &cmd_help,        0,    0,    "Command All Show"},
-    {"cls",     CMD_CLS,        &cmd_cls,         0,    0,    "Display Clear"},
-    {"sys",     CMD_SYSTEM,     &cmd_system,      0,    0,    "Show System Info"},
-    {"rst",     CMD_RST,        &cmd_rst,         0,    0,    "S/W Reset"},
-    {"memd",    CMD_MEM_DUMP,   &cmd_mem_dump,    2,    2,    "Memory Dump. exp(memd #4byteHexAddr #length)"},
-    {"reg",     CMD_REG,        &cmd_reg,         3,    4,    "Register R/W. exp(reg #addr r|w bits #val)"},
-    {"i2c",     CMD_I2C,        &cmd_i2c,         2,    2,    "I2C Control. exp(i2c port, command)"},
-    {"gpio",    CMD_GPIO,       &cmd_gpio,        2,    2,    "GPIO Control. exp(pin pin, value)"},
-    {"px",      CMD_NEOPIXEL,   &cmd_neopixel,    1,    2,    "NeoPixel Control. exp(px command, args)"},
-    {"tm",      CMD_TIMER,      &cmd_timer,       0,    1,    "Set timer alarm. exp(tm seconds)"},
+//  | 短縮/フルコマンド文字列 | コールバック関数 | 最小引数 | 最大引数 | コマンドの説明分 |
+    {"cls", "clear"     ,&cmd_cls,         0,    0,    "Display Clear"},
+    {"sys", "sysinfo"   ,&cmd_system,      0,    0,    "Show System Info"},
+    {"rst", "reset"     ,&cmd_rst,         0,    0,    "S/W Reset"},
+    {"reg", "register"  ,&cmd_reg,         3,    4,    "Register R/W. exp(reg #addr r|w bits #val)"},
+    {"i2c", "iic"       ,&cmd_i2c,         2,    2,    "I2C Control. exp(i2c port, command)"},
+    {"io",  "gpio"      ,&cmd_gpio,        2,    2,    "GPIO Control. exp(pin pin, value)"},
+    {"px",  "neopixel"  ,&cmd_neopixel,    1,    2,    "NeoPixel Control. exp(px command, args)"},
+    {"tm",  "timer"     ,&cmd_timer,       0,    1,    "Set timer alarm. exp(tm seconds)"},
     //  RTC ... (RP2040 = H/W RTC, RP2350 = AON Timer)
-    {"rtc",     CMD_RTC,        &cmd_rtc,         0,    1,    "RTC. exp(rtc g | rtc s YYYY/MM/DD HH:MM:SS)"},
+    {"rt", "rtc"        ,&cmd_rtc,         0,    1,    "RTC. exp(rtc g | rtc s YYYY/MM/DD HH:MM:SS)"},
 #if defined(MCU_RP2350)
-    {"rng",     CMD_RNG,        &cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
-    {"sha",     CMD_SHA,        &cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
+    {"rng", "random"    ,&cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
+    {"sha", "sha256"    ,&cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
-    {"mt",      CMD_MT_TEST,    &cmd_mt_test,     0,    0,    "Math Calc Test"},
-    {"mct",     CMD_MCT,        &cmd_mct_test,    0,    0,    "Multi Core Test"},
+    {"mt", "mathtest"   ,&cmd_mt_test,     0,    0,    "Math Calc Test"},
+    {"mct","multicore"  ,&cmd_mct_test,    0,    0,    "Multi Core Test"},
 };
 
 // コマンドテーブルのコマンド数(const)
-const size_t g_cmd_tbl_size = sizeof(g_cmd_tbl) / sizeof(g_cmd_tbl[0]);
-
-// タイマーコールバック関数
-static int64_t timer_callback(alarm_id_t id, void *user_data)
-{
-    // 対応するタイマーを探して状態を更新
-    for (int i = 0; i < TIMER_MAX_ALARMS; i++)
-    {
-        if (s_timer_alarn_state[i].alarm_id == id) {
-            printf("\nTimer #%d Alarm! (Set time : %d)\n", i + 1, s_timer_alarn_state[i].req_time_sec);
-
-            // 登録順序を再利用可能なリストに戻す
-            s_timer_alarn_state[i].is_run = false;
-            s_timer_alarn_state[i].alarm_id = 0;
-            s_timer_alarn_state[i].order = 0;
-            break;
-        }
-    }
-
-    printf("> ");
-
-    return 0;  // 繰り返しなし
-}
+const size_t g_tbl_cmd_num = sizeof(g_cmd_tbl) / sizeof(g_cmd_tbl[0]);
 
 static void dbg_com_init_msg(dbg_cmd_args_t *p_args)
 {
@@ -117,17 +120,6 @@ static void dbg_com_init_msg(dbg_cmd_args_t *p_args)
             "[INFO] Wanning! WDT Enabled : %d ms OVF!\n" ANSI_ESC_PG_GREEN,
             _WDT_OVF_TIME_MS_);
 #endif // _WDT_ENABLE_
-}
-
-void cmd_help(dbg_cmd_args_t *p_args)
-{
-    dbg_com_init_msg(p_args);
-
-    printf("\nAvailable %d commands:\n", g_cmd_tbl_size);
-    for (uint8_t i = 0; i < g_cmd_tbl_size; i++)
-    {
-        printf("  %-10s - %s\n", g_cmd_tbl[i].p_cmd_str, g_cmd_tbl[i].p_description);
-    }
 }
 
 static void cmd_cls(dbg_cmd_args_t *p_args)
@@ -392,65 +384,7 @@ static void cmd_rst(dbg_cmd_args_t *p_args)
  */
 static void cmd_timer(dbg_cmd_args_t *p_args)
 {
-    if (p_args->argc > 1) {
-        int32_t seconds = atoi(p_args->p_argv[1]);
-        if (seconds <= 0) {
-            printf("Error: Invalid timer set_time_us. Must be positive.\n");
-            return;
-        }
-        if (seconds > TIMER_MAX_SECONDS) {
-            printf("Error: Timer set_time_us exceeds maximum of %d seconds.\n", TIMER_MAX_SECONDS);
-            return;
-        }
-
-        // 空いているタイマースロットを探す
-        int free_slot = -1;
-        for (int i = 0; i < TIMER_MAX_ALARMS; i++)
-        {
-            if (!s_timer_alarn_state[i].is_run) {
-                free_slot = i;
-                break;
-            }
-        }
-
-        if (free_slot == -1) {
-            printf("Error: All %d hardware timers are in use.\n", TIMER_MAX_ALARMS);
-            return;
-        }
-
-        // H/Wでアラームを設定（us単位）
-        s_timer_alarn_state[free_slot].req_time_sec = seconds;
-        uint64_t delay_us = seconds * 1000000ULL;
-        alarm_id_t alarm_id = add_alarm_in_us(delay_us, timer_callback, NULL, true);
-        if (alarm_id > 0) {
-            s_timer_alarn_state[free_slot].is_run = true;
-            s_timer_alarn_state[free_slot].start_time = time_us_32();
-            s_timer_alarn_state[free_slot].set_time_us = delay_us;
-            s_timer_alarn_state[free_slot].alarm_id = alarm_id;
-            s_timer_alarn_state[free_slot].order = 0;
-            s_available_tim_cnt--;
-            printf("Timer #%d Alarm Set %d s\n",free_slot + 1, seconds);
-        } else {
-            printf("Error: Failed to set timer.\n");
-        }
-    } else {
-        // 引数なしの場合は現在のタイマー状態を表示
-        bool any_running = false;
-        for (int i = 0; i < TIMER_MAX_ALARMS; i++) {
-            if (s_timer_alarn_state[i].is_run) {
-                uint32_t elapsed = time_us_32() - s_timer_alarn_state[i].start_time;
-                uint32_t remaining = (elapsed < s_timer_alarn_state[i].set_time_us) ?
-                                    (s_timer_alarn_state[i].set_time_us - elapsed) : 0;
-                printf("Timer alarm #%d = %u s remaining.\n",
-                        i + 1,
-                       (remaining + 500000) / 1000000);  // 四捨五入
-                any_running = true;
-            }
-        }
-        if (!any_running) {
-            printf("No timers are running.\n");
-        }
-    }
+    // TODO:
 }
 
 /**
@@ -535,39 +469,6 @@ static void cmd_gpio(dbg_cmd_args_t *p_args)
     volatile uint32_t end_time = time_us_32();
 
     printf("GPIO %d set to %d (proc time: %u us)\n\n", pin, value, end_time - start_time);
-}
-
-/**
- * @brief メモリダンプコマンド関数
- * 
- * @param p_args コマンド引数の構造体ポインタ
- */
-static void cmd_mem_dump(dbg_cmd_args_t *p_args)
-{
-    uint32_t addr;
-    uint32_t length;
-
-    if (p_args->argc != 3) {
-        printf("Error: Invalid number of arguments. Usage: mem_dump <address> <length>\n");
-        return;
-    }
-
-    // アドレスを16進数文字列から数値に変換
-    if (sscanf(p_args->p_argv[1], "#%x", &addr) != 1) {
-        printf("Error: Invalid address format. Use hexadecimal with # prefix (e.g., #F0000000)\n");
-        return;
-    }
-
-    // 長さを16進数文字列から数値に変換
-    if (sscanf(p_args->p_argv[2], "#%x", &length) != 1) {
-        printf("Error: Invalid length format. Use hexadecimal with # prefix (e.g., #10)\n");
-        return;
-    }
-
-    volatile uint32_t start_time = time_us_32();
-    show_mem_dump(addr, length);
-    volatile uint32_t end_time = time_us_32();
-    printf("\nMemory dump completed (proc time: %u us)\n", end_time - start_time);
 }
 
 /**

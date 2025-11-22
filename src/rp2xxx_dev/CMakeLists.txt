@@ -42,11 +42,11 @@ add_executable(rp2xxx_dev
             app_cpu_core_1.c
             app_main.c
             app_math.c
-            dbg_com.c
-            dbd_com_app.c
             muc_rpxxx_util.c
             ext_mcu_com.c
             state_machine.c
+            app_dbg_com.c
+            ${CMAKE_CURRENT_LIST_DIR}/middle/dbg_com/dbg_com.c
             )
 
 pico_set_program_name(rp2xxx_dev "rp2xxx_dev")
@@ -83,8 +83,8 @@ add_compile_options(-mfloat-abi=hard)
 # =========================================================================
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(rp2xxx_dev 0)
-pico_enable_stdio_usb(rp2xxx_dev 1)
+pico_enable_stdio_uart(rp2xxx_dev 1)
+pico_enable_stdio_usb(rp2xxx_dev 0)
 
 # Add the standard library to the build
 # [RP2040用]
@@ -104,6 +104,7 @@ target_link_libraries(rp2xxx_dev
 # Add the standard include files to the build
 target_include_directories(rp2xxx_dev PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/middle/dbg_com
 )
 
 # Add any user requested libraries

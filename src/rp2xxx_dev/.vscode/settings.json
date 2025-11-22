@@ -87,7 +87,8 @@
         "state_machine.h": "c",
         "ext_mcu_com.h": "c",
         "dma.h": "c",
-        "compare": "c"
+        "compare": "c",
+        "app_dbg_comc": "c"
     },
     "cortex-debug.variableUseNaturalFormat": false
 }

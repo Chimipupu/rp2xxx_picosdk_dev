@@ -1,3 +1,6 @@
 [submodule "picosdk_mapfile_paser_py"]
 	path = picosdk_mapfile_paser_py
 	url = https://github.com/Chimipupu/picosdk_mapfile_paser_py.git
+[submodule "src/rp2xxx_dev/middle/dbg_com"]
+	path = src/rp2xxx_dev/middle/dbg_com
+	url = https://github.com/Chimipupu/dbg_com.git
