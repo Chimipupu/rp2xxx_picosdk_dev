@@ -37,10 +37,8 @@ pico_sdk_init()
 
 add_executable(rp2xxx_dev
             hw_init.c
-            drv_neopixel.c
-            app_cpu_core_0.c
-            app_cpu_core_1.c
             app_main.c
+            drv_neopixel.c
             app_math.c
             muc_rpxxx_util.c
             ext_mcu_com.c

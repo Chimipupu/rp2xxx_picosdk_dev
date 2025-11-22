@@ -56,8 +56,6 @@
 
 extern neopixel_t s_neopixel;
 
-static void dbg_com_init_msg(dbg_cmd_args_t *p_args);
-
 static void cmd_cls(dbg_cmd_args_t *p_args);
 static void cmd_system(dbg_cmd_args_t *p_args);
 static void cmd_mt_test(dbg_cmd_args_t *p_args);
@@ -103,24 +101,6 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
 
 // コマンドテーブルのコマンド数(const)
 const size_t g_tbl_cmd_num = sizeof(g_cmd_tbl) / sizeof(g_cmd_tbl[0]);
-
-static void dbg_com_init_msg(dbg_cmd_args_t *p_args)
-{
-    printf(ANSI_ESC_PG_RED
-            "\nDebug Command Monitor for %s Ver%d.%d.%d\n",
-            MCU_NAME, FW_VERSION_MAJOR, FW_VERSION_MINOR, FW_VERSION_REVISION);
-
-    printf("Copyright (c) 2025 Chimipupu All Rights Reserved.\n"
-            ANSI_ESC_PG_RESET);
-
-    // printf("Type 'help' for available commands\n");
-
-#ifdef _WDT_ENABLE_
-    printf(ANSI_ESC_PG_YELLOW
-            "[INFO] Wanning! WDT Enabled : %d ms OVF!\n" ANSI_ESC_PG_GREEN,
-            _WDT_OVF_TIME_MS_);
-#endif // _WDT_ENABLE_
-}
 
 static void cmd_cls(dbg_cmd_args_t *p_args)
 {

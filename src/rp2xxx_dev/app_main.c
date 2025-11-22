@@ -3,15 +3,41 @@
  * @author Chimipupu(https://github.com/Chimipupu)
  * @brief アプリメイン
  * @version 0.1
- * @date 2025-06-13
+ * @date 2025-11-23
  * 
  * @copyright Copyright (c) 2025 Chimipupu All Rights Reserved.
  * 
  */
 #include "app_main.h"
-#include "app_cpu_core_0.h"
-#include "app_cpu_core_1.h"
+#include "pcb_def.h"
 #include "muc_rpxxx_util.h"
+#include "drv_neopixel.h"
+#include "state_machine.h"
+#include "ext_mcu_com.h"
+
+// --------------------------------------------------------------------------
+// [コンパイルスイッチ]
+#ifdef DEBUG_DBG_COM_USE
+#include "dbg_com.h"
+extern const dbg_cmd_info_t g_cmd_tbl[];
+extern const size_t g_tbl_cmd_num;
+dbg_com_config_t g_dbgc_config;
+#endif // DEBUG_DBG_COM_USE
+
+#if 1
+#include "drv_neopixel.h"
+neopixel_t s_neopixel;
+static rgb_color_t s_rgb_buf[NEOPIXEL_LED_CNT] = {0};
+#endif
+// --------------------------------------------------------------------------
+
+volatile uint32_t g_core_num_core_0 = 0xFF;
+volatile uint32_t g_core_num_core_1 = 0xFF;
+
+static void cpu_core_0_app_main(void);
+static void cpu_core_1_app_main(void);
+// --------------------------------------------------------------------------
+// [APP]
 
 /**
  * @brief メモリダンプ(16進HEX & Ascii)
@@ -142,7 +168,7 @@ void proc_exec_time(void (*func)(void), const char* func_name, ...)
  */
 void core_0_main(void)
 {
-    app_core_0_main();
+    cpu_core_0_app_main();
 }
 
 /**
@@ -151,5 +177,70 @@ void core_0_main(void)
  */
 void core_1_main(void)
 {
-    app_core_1_main();
+    cpu_core_1_app_main();
+}
+
+/**
+ * @brief CPU Core0のアプリメイン関数
+ * 
+ */
+static void cpu_core_0_app_main(void)
+{
+    g_core_num_core_0 = get_core_num();
+
+    // ステートマシン初期化
+    sm_slave_init();
+
+    while(1)
+    {
+        // ステートマシーン
+        sm_slave_main();
+
+        _WDT_CNT_RST();
+    }
+}
+
+/**
+ * @brief CPU Core1のアプリメイン関数
+ * 
+ */
+static void cpu_core_1_app_main(void)
+{
+    g_core_num_core_1 = get_core_num();
+
+    // 外部マイコン間通信 初期化
+    emc_init();
+
+#if 1
+    // NeoPixel初期化
+    s_neopixel.led_cnt = NEOPIXEL_LED_CNT;
+    s_neopixel.data_pin = PCB_NEOPIXEL_PIN;
+    memset(s_rgb_buf, 0, sizeof(s_rgb_buf));
+    s_neopixel.p_pixel_grb_buf = &s_rgb_buf[0];
+    drv_neopixel_init(&s_neopixel);
+#endif
+
+    // printf("MCU:\tRP2350\n");
+    // printf("System Clock:\t%d MHz\n", clock_get_hz(clk_sys) / 1000000);
+    // printf("USB Clock:\t%d MHz\n", clock_get_hz(clk_usb) / 1000000);
+
+#ifdef DEBUG_DBG_COM_USE
+    // デバッグモニタ初期化
+    g_dbgc_config.p_cmd_tbl = &g_cmd_tbl[0];
+    g_dbgc_config.total_cmd = g_tbl_cmd_num;
+    dbg_com_init(&g_dbgc_config);
+#endif // DEBUG_DBG_COM_USE
+
+    while(1)
+    {
+        // 外部マイコン間通信 メイン
+        emc_main();
+
+#ifdef DEBUG_DBG_COM_USE
+        // デバッグモニタ メイン
+        dbg_com_main();
+#endif // DEBUG_DBG_COM_USE
+
+        _WDT_CNT_RST();
+    }
 }
