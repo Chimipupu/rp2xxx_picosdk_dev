@@ -217,9 +217,9 @@ static void cmd_system(dbg_cmd_args_t *p_args)
             SPI_BIT_RATE, SPI_1_CS, SPI_1_SCK, SPI_1_MISO, SPI_1_MOSI);
     // UART
     printf("\n[UART Info]\n");
-    printf("UART 0 : %d bps 8N1, TX/RX (GPIO %d%d)\n",
+    printf("UART 0 : %d bps 8N1, TX/RX (GPIO %d/%d)\n",
             UART_BAUD_RATE, UART_0_TX, UART_0_RX);
-    printf("UART 1 : %d bps 8N1, TX/RX (GPIO %d%d)\n",
+    printf("UART 1 : %d bps 8N1, TX/RX (GPIO %d/%d)\n",
             UART_BAUD_RATE, UART_1_TX, UART_1_RX);
 }
 

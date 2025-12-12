@@ -190,9 +190,14 @@
 #define I2C_BIT_RATE_100KHZ    (100 * 1000)         // RP2350のI2C Standard Mode  ... 100kHz
 #define I2C_BIT_RATE_400KHZ    (400 * 1000)         // RP2350のI2C Fast Mode      ... 400kHz
 #define I2C_BIT_RATE_1MHZ      (1000 * 1000)        // RP2350のI2C Fast Mode Plus ... 1MHz
-#define I2C_BIT_RATE            I2C_BIT_RATE_100KHZ
+#define I2C_BIT_RATE            I2C_BIT_RATE_400KHZ
+#if 1
+#define I2C_0_SDA               4                   // I2C0 SDA (GPIO 4)
+#define I2C_0_SCL               5                   // I2C0 SCL (GPIO 5)
+#else
 #define I2C_0_SDA               16                  // I2C0 SDA (GPIO 16)
 #define I2C_0_SCL               17                  // I2C0 SCL (GPIO 17)
+#endif
 #define I2C_1_SDA               18                  // I2C1 SDA (GPIO 18)
 #define I2C_1_SCL               19                  // I2C1 SCL (GPIO 19)
 
