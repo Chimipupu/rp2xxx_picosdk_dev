@@ -10,6 +10,7 @@
  */
 
 #include "hw_init.h"
+#include "cpu_com.h"
 #include "drv_neopixel.h"
 
 extern volatile uint32_t g_core_num_core_0;
@@ -508,6 +509,9 @@ int main()
     // printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
 
     s_core_num = get_core_num();
+
+    // CPU間通信 初期化
+    cpu_com_init();
 
     // CPU Core1を起動
     multicore_launch_core1(core_1_main);

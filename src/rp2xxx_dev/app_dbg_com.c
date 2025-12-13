@@ -249,7 +249,12 @@ static void cmd_mat_test(dbg_cmd_args_t *p_args)
 
 static void  cmd_mct_test(dbg_cmd_args_t *p_args)
 {
-    cpu_com_main(get_core_num());
+    cpu_com_flame_t flame;
+
+    flame.BIT.CMD = CPU_COM_CMD_TEST;
+    flame.BIT.CPUx = get_core_num();
+    flame.BIT.DATA = CPU_COM_DATA_TEST;
+    cpu_com_tx_flame(&flame);
 }
 
 static void cmd_pi_calc(dbg_cmd_args_t *p_args)

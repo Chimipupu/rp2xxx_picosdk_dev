@@ -184,7 +184,8 @@ static void cpu_core_0_app_main(void)
 
     while(1)
     {
-        cpu_fifo_data = get_multicore_fifo();
+        // CPU間通信 メイン
+        cpu_com_main(g_core_num_core_0);
         _WDT_CNT_RST();
     }
 }
@@ -196,9 +197,6 @@ static void cpu_core_0_app_main(void)
 static void cpu_core_1_app_main(void)
 {
     g_core_num_core_1 = get_core_num();
-
-    // 外部CPU間通信 初期化
-    cpu_com_init();
 
 #if 1
     // NeoPixel初期化

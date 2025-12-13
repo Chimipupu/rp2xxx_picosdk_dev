@@ -10,54 +10,77 @@
  */
 
 #include "cpu_com.h"
-#include "app_main.h"
-#include "muc_rpxxx_util.h"
 
 // --------------------------------------------------------------------------
-static uint8_t s_read_idx = 0;
-static uint8_t s_write_idx = 0;
-static uint16_t s_flame_data_buf[FLAME_DATA_BUF_SIZE] = {0};
-static bool s_is_test_end = false;
+// [CPU Core0用]
+static cpu_com_flame_t s_cpu_core0_fifo_buf[CPU_FIFO_NUM] = {0};
+static uint8_t s_idx_cpu_core0_fifo_buf = 0;
+
+// [CPU Core0用]
+static cpu_com_flame_t s_cpu_core1_fifo_buf[CPU_FIFO_NUM] = {0};
+static uint8_t s_idx_cpu_core1_fifo_buf = 0;
 // --------------------------------------------------------------------------
+static bool s_is_test_end = false;
+static void cpu_com_statemachine(uint8_t cpu_no, cpu_com_flame_t *p_flame);
+// --------------------------------------------------------------------------
+// [Static関数]
+// --------------------------------------------------------------------------
+
 /**
- * @brief CPU間通信フレーム解析関数
- * 
+ * @brief CPU間通信 ステートマシーン
+ * @param cpu_no CPU番号
  * @param p_flame CPU間通信フレーム構造体ポインタ
  */
-void cpu_com_parse_sm_flame(CPU_COM_FLAME_T *p_flame)
+static void cpu_com_statemachine(uint8_t cpu_no, cpu_com_flame_t *p_flame)
 {
-    uint8_t i;
+    uint32_t tmp = 0;
+    cpu_com_flame_t tx_flame;
 
     switch (p_flame->BIT.CMD) {
-        case CPU_COM_CMD_TEST_REQ:
-            printf("[DEBUG] SM_CMD_TEST_REQ Flame RX\n");
+        // 受信処理 ... CPU間通信 要求コマンド
+        case CPU_COM_CMD_REQ:
+            printf("[DEBUG] RX! REQ Flame: CPUx = %d, DATA = 0x%04X\n",
+                p_flame->BIT.CPUx,
+                p_flame->BIT.DATA
+                );
             break;
 
-        case CPU_COM_CMD_WAIT_RES:
-            if(p_flame->BIT.LEN > 0) {
-                printf("[DEBUG] RX Flame : CMD=0x%02X, LEN=0x%02X\n", p_flame->BIT.CMD, p_flame->BIT.LEN);
-            } else {
-                printf("[DEBUG] RX Flame : CMD=0x%02X\n", p_flame->BIT.CMD);
+        // 受信処理 ... CPU間通信 要求応答コマンド
+        case CPU_COM_CMD_RES:
+            printf("[DEBUG] RX! REQ Flame: CPUx = %d, DATA = 0x%04X\n", p_flame->BIT.CPUx, p_flame->BIT.DATA);
+            break;
+
+        // 受信処理 ... CPU間通信 テストコマンド
+        case CPU_COM_CMD_TEST:
+            printf("[DEBUG] RX! CPU COM Test Flame: CPUx = %d, DATA = 0x%04X\n", p_flame->BIT.CPUx, p_flame->BIT.DATA);
+
+            if(p_flame->BIT.DATA == CPU_COM_DATA_TEST)
+            {
+                tx_flame.BIT.CMD = CPU_COM_CMD_RES;
+                tx_flame.BIT.CPUx = cpu_no;
+                tmp = p_flame->BIT.DATA;
+                tmp = ~tmp;
+                tx_flame.BIT.DATA = tmp;
+                cpu_com_tx_flame(&tx_flame);
             }
             break;
 
         default:
-            for(i = 0; i < p_flame->BIT.LEN; i++)
-            {
-                printf("[DEBUG] RX Flame : DATA=0x%04X", p_flame->BIT.DATA);
-                s_flame_data_buf[s_write_idx] = p_flame->BIT.DATA;
-                s_write_idx = (s_write_idx + 1) % FLAME_DATA_BUF_SIZE;
-            }
+            // NOP
             break;
     }
 }
+
+// --------------------------------------------------------------------------
+// [API]
+// --------------------------------------------------------------------------
 
 /**
  * @brief CPU間通信フレーム送信関数
  * 
  * @param p_flame CPU間通信フレーム構造体ポインタ
  */
-void cpu_com_tx_flame(CPU_COM_FLAME_T *p_flame)
+void cpu_com_tx_flame(cpu_com_flame_t *p_flame)
 {
     set_multicore_fifo(p_flame->DWORD);
 }
@@ -67,7 +90,7 @@ void cpu_com_tx_flame(CPU_COM_FLAME_T *p_flame)
  * 
  * @param p_flame CPU間通信フレーム構造体ポインタ
  */
-void cpu_com_rx_flame(CPU_COM_FLAME_T *p_flame)
+void cpu_com_rx_flame(cpu_com_flame_t *p_flame)
 {
     p_flame->DWORD = get_multicore_fifo();
 }
@@ -78,7 +101,16 @@ void cpu_com_rx_flame(CPU_COM_FLAME_T *p_flame)
  */
 void cpu_com_init(void)
 {
-    // TODO
+    uint8_t i;
+
+    s_idx_cpu_core0_fifo_buf = 0;
+    s_idx_cpu_core1_fifo_buf = 0;
+
+    for(i = 0; i < CPU_FIFO_NUM; i++)
+    {
+        s_cpu_core0_fifo_buf[i].DWORD = 0;
+        s_cpu_core1_fifo_buf[i].DWORD = 0;
+    }
 }
 
 /**
@@ -88,25 +120,17 @@ void cpu_com_init(void)
  */
 void cpu_com_main(uint8_t cpu_no)
 {
-    CPU_COM_FLAME_T flame;
-
-    if(s_is_test_end != true) {
-        flame.BIT.CMD = CPU_COM_CMD_TEST_REQ;
-        flame.BIT.LEN = 0;
-        flame.BIT.DATA = 0;
-        flame.BIT.CPUx = cpu_no;
-        cpu_com_tx_flame(&flame);
-
-        if(flame.DWORD != 0) {
-            if(flame.BIT.CMD == CPU_COM_CMD_TEST_RES) {
-                if(flame.BIT.DATA == CPU_COM_DATA_TEST){
-                    printf("[INFO] EMC TEST OK\n");
-                    s_is_test_end = true;
-                } else {
-                    printf("[ERROR] EMC TEST NG\n");
-                    s_is_test_end = false;
-                }
-            }
-        }
+    if(cpu_no == CPU_CORE_0) {
+        s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf].DWORD = 0;
+        cpu_com_rx_flame(&s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
+        s_idx_cpu_core0_fifo_buf = (s_idx_cpu_core0_fifo_buf + 1) % CPU_FIFO_NUM;
+        cpu_com_statemachine(cpu_no, &s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
+    } else if(cpu_no == CPU_CORE_1) {
+        s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf].DWORD = 0;
+        cpu_com_rx_flame(&s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
+        s_idx_cpu_core1_fifo_buf = (s_idx_cpu_core1_fifo_buf + 1) % CPU_FIFO_NUM;
+        cpu_com_statemachine(cpu_no, &s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
+    } else {
+        // NOP
     }
 }
