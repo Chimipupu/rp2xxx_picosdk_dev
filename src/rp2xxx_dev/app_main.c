@@ -207,10 +207,6 @@ static void cpu_core_1_app_main(void)
     drv_neopixel_init(&s_neopixel);
 #endif
 
-    // printf("MCU:\tRP2350\n");
-    // printf("System Clock:\t%d MHz\n", clock_get_hz(clk_sys) / 1000000);
-    // printf("USB Clock:\t%d MHz\n", clock_get_hz(clk_usb) / 1000000);
-
 #ifdef DEBUG_DBG_COM_USE
     // デバッグモニタ初期化
     g_dbgc_config.p_cmd_tbl = &g_cmd_tbl[0];

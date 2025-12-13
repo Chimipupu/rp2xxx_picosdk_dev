@@ -45,6 +45,7 @@
 
 // CPU間通信フレームコマンド
 typedef enum {
+    CPU_COM_CMD_NONE      = 0x00, // CPU間通信 コマンドなし
     CPU_COM_CMD_REQ       = 0x70, // CPU間通信 要求コマンド
     CPU_COM_CMD_RES       = 0x71, // CPU間通信 要求応答コマンド
     CPU_COM_CMD_TEST      = 0x72, // CPU間通信 テストコマンド

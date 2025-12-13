@@ -199,8 +199,7 @@ void hardware_calc_sha256(const uint8_t *p_data_buf, size_t len, uint8_t *p_hash
 uint32_t get_multicore_fifo(void)
 {
     uint32_t data = 0;
-    // ブロッキング(タイムアウト付き)
-    multicore_fifo_pop_timeout_us(300, &data);
+    multicore_fifo_pop_timeout_us(300, &data); // ブロッキング(タイムアウト付き)
     return data;
 }
 

@@ -65,6 +65,7 @@ static void cpu_com_statemachine(uint8_t cpu_no, cpu_com_flame_t *p_flame)
             }
             break;
 
+        case CPU_COM_CMD_NONE:
         default:
             // NOP
             break;
@@ -123,13 +124,17 @@ void cpu_com_main(uint8_t cpu_no)
     if(cpu_no == CPU_CORE_0) {
         s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf].DWORD = 0;
         cpu_com_rx_flame(&s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
-        s_idx_cpu_core0_fifo_buf = (s_idx_cpu_core0_fifo_buf + 1) % CPU_FIFO_NUM;
-        cpu_com_statemachine(cpu_no, &s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
+        if(s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf].BIT.CMD != CPU_COM_CMD_NONE) {
+            s_idx_cpu_core0_fifo_buf = (s_idx_cpu_core0_fifo_buf + 1) % CPU_FIFO_NUM;
+            cpu_com_statemachine(cpu_no, &s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
+        }
     } else if(cpu_no == CPU_CORE_1) {
         s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf].DWORD = 0;
         cpu_com_rx_flame(&s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
-        s_idx_cpu_core1_fifo_buf = (s_idx_cpu_core1_fifo_buf + 1) % CPU_FIFO_NUM;
-        cpu_com_statemachine(cpu_no, &s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
+        if(s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf].BIT.CMD != CPU_COM_CMD_NONE) {
+            s_idx_cpu_core1_fifo_buf = (s_idx_cpu_core1_fifo_buf + 1) % CPU_FIFO_NUM;
+            cpu_com_statemachine(cpu_no, &s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
+        }
     } else {
         // NOP
     }
