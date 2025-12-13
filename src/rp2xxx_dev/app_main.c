@@ -12,8 +12,7 @@
 #include "pcb_def.h"
 #include "muc_rpxxx_util.h"
 #include "drv_neopixel.h"
-#include "state_machine.h"
-#include "ext_mcu_com.h"
+#include "cpu_com.h"
 
 // --------------------------------------------------------------------------
 // [コンパイルスイッチ]
@@ -149,15 +148,9 @@ void i2c_slave_scan(uint8_t port)
  */
 void proc_exec_time(void (*func)(void), const char* func_name, ...)
 {
-    _DI();
     volatile uint32_t start_time = time_us_32();
-    _EI();
-
     func();
-
-    _DI();
     volatile uint32_t end_time = time_us_32();
-    _EI();
 
     printf("proc time %s: %u us\n", func_name, end_time - start_time);
 }
@@ -186,16 +179,12 @@ void core_1_main(void)
  */
 static void cpu_core_0_app_main(void)
 {
+    uint32_t cpu_fifo_data = 0;
     g_core_num_core_0 = get_core_num();
-
-    // ステートマシン初期化
-    sm_slave_init();
 
     while(1)
     {
-        // ステートマシーン
-        sm_slave_main();
-
+        cpu_fifo_data = get_multicore_fifo();
         _WDT_CNT_RST();
     }
 }
@@ -208,8 +197,8 @@ static void cpu_core_1_app_main(void)
 {
     g_core_num_core_1 = get_core_num();
 
-    // 外部マイコン間通信 初期化
-    emc_init();
+    // 外部CPU間通信 初期化
+    cpu_com_init();
 
 #if 1
     // NeoPixel初期化
@@ -233,8 +222,8 @@ static void cpu_core_1_app_main(void)
 
     while(1)
     {
-        // 外部マイコン間通信 メイン
-        emc_main();
+        // CPU間通信 メイン
+        cpu_com_main(g_core_num_core_1);
 
 #ifdef DEBUG_DBG_COM_USE
         // デバッグモニタ メイン

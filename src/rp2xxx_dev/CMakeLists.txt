@@ -36,14 +36,13 @@ pico_sdk_init()
 # Add executable. Default name is the project name, version 0.1
 
 add_executable(rp2xxx_dev
-            hw_init.c
             app_main.c
-            drv_neopixel.c
             app_math.c
-            muc_rpxxx_util.c
-            ext_mcu_com.c
-            state_machine.c
             app_dbg_com.c
+            cpu_com.c
+            drv_neopixel.c
+            hw_init.c
+            muc_rpxxx_util.c
             ${CMAKE_CURRENT_LIST_DIR}/middle/dbg_com/dbg_com.c
             )
 

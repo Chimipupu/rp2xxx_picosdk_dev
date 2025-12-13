@@ -33,8 +33,7 @@
 #include "app_main.h"
 #include "app_math.h"
 #include "muc_rpxxx_util.h"
-#include "state_machine.h"
-#include "ext_mcu_com.h"
+#include "cpu_com.h"
 #include "drv_neopixel.h"
 
 // GPIOの最大本数
@@ -58,7 +57,7 @@ extern neopixel_t s_neopixel;
 
 static void cmd_cls(dbg_cmd_args_t *p_args);
 static void cmd_system(dbg_cmd_args_t *p_args);
-static void cmd_mt_test(dbg_cmd_args_t *p_args);
+static void cmd_mat_test(dbg_cmd_args_t *p_args);
 static void cmd_mct_test(dbg_cmd_args_t *p_args);
 static void cmd_pi_calc(dbg_cmd_args_t *p_args);
 #if defined(MCU_RP2350)
@@ -95,8 +94,8 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
     {"rng", "random"    ,&cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
     {"sha", "sha256"    ,&cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
-    {"mt", "mathtest"   ,&cmd_mt_test,     0,    0,    "Math Calc Test"},
-    {"mct","multicore"  ,&cmd_mct_test,    0,    0,    "Multi Core Test"},
+    {"mat", "mathtest"   ,&cmd_mat_test,   0,    0,    "Math Calc Test"},
+    {"mct", "multicore"  ,&cmd_mct_test,   0,    0,    "Multi Core CPU Test"},
 };
 
 // コマンドテーブルのコマンド数(const)
@@ -223,7 +222,7 @@ static void cmd_system(dbg_cmd_args_t *p_args)
             UART_BAUD_RATE, UART_1_TX, UART_1_RX);
 }
 
-static void cmd_mt_test(dbg_cmd_args_t *p_args)
+static void cmd_mat_test(dbg_cmd_args_t *p_args)
 {
     // 数学関連テスト
     app_math_math_test();
@@ -248,13 +247,9 @@ static void cmd_mt_test(dbg_cmd_args_t *p_args)
     proc_exec_time(double_div_test, "double_div_test");
 }
 
-static void cmd_mct_test(dbg_cmd_args_t *p_args)
+static void  cmd_mct_test(dbg_cmd_args_t *p_args)
 {
-#ifdef DEBUG_EXT_MCU_COM_USE
-    // printf("[DEBUG] EMC Test\n");
-    emc_test();
-    // printf("[DEBUG] EMC Test End\n");
-#endif // DEBUG_EXT_MCU_COM_USE
+    cpu_com_main(get_core_num());
 }
 
 static void cmd_pi_calc(dbg_cmd_args_t *p_args)
@@ -593,7 +588,7 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
 
     if(strcasecmp(p_mode_str, "fade") == 0) {
         // Core 0にLEDフェードを実行要求
-        set_multicore_fifo(PROC_NEOPIXEL_FADE);
+        set_multicore_fifo(CPU_COM_DATA_PROC_RGB);
         printf("All NeoPixel Color Fade! at Core 0\n");
         return;
     }

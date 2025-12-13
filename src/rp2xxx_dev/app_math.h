@@ -18,19 +18,13 @@
 #include <stdbool.h>
 #include <math.h>
 
-#ifndef M_PI
-#define MATH_PI      M_PI
-#else
-#define MATH_PI      3.14159265358979323846
-#endif
+// --------------------------------------------------------------------------
+// [コンパイルスイッチ]
+#define CALC_PI_SPIGOT
 
-#ifndef M_E
-#define MATH_E      2.7182818284590452354
-#else
-#define MATH_E      M_E
-#endif
-
-#define UNKNOWN_VAL    0
+// --------------------------------------------------------------------------
+#define MATH_PI        3.14159265358979323846
+#define MATH_E         2.7182818284590452354
 
 // 四則演算の回数（整数、float,double）100万回
 #define TEST_LOOP_CNT 1000000
@@ -38,13 +32,14 @@
 #define MATH_DEG_TO_RAD(deg)    (deg * M_PI) / 180.0f      // 度からラジアン
 #define MATH_RAD_TO_DEG(rad)    ((rad) * 180.0f / M_PI)    // ラジアンから度
 
+// --------------------------------------------------------------------------
 double app_math_calc_accuracy(void);
 bool app_math_is_prime_num(uint32_t n);
 double app_math_pythagoras(double a, double b);
 double app_math_pi_calc(uint32_t cnt);
+void app_math_pi_calc_spigot_show(void);
 uint32_t app_math_fibonacci_calc(uint32_t cnt);
 double app_math_goldenratio_calc(void);
-double app_math_napier_calc(void);
 float app_math_fast_inv_sqrt(float num);
 void app_math_fibonacci(uint32_t n);
 void app_math_prime(uint32_t n);

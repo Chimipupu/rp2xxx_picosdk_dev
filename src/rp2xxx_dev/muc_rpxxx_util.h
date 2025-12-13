@@ -38,6 +38,7 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 
+// --------------------------------------------------------------------------
 // レジスタを8/16/32bitでR/Wするマクロ
 #define REG_READ_BYTE(base, offset)         (*(volatile uint8_t  *)((base) + (offset)))
 #define REG_READ_WORD(base, offset)         (*(volatile uint16_t *)((base) + (offset)))
@@ -51,6 +52,7 @@
 #define REG_BIT_CLR(reg, bit)               ((reg) &= ~(1UL << (bit))) // レジスタのビットをクリア
 #define REG_BIT_TGL(reg, bit)               ((reg) ^=  (1UL << (bit))) // レジスタのビットをトグル
 #define REG_BIT_CHK(reg, bit)               ((reg) &   (1UL << (bit))) // レジスタのビットチェック
+// --------------------------------------------------------------------------
 
 // NOP
 __attribute__( ( always_inline ) ) static inline void _NOP(void)
@@ -81,6 +83,7 @@ __attribute__( ( always_inline ) ) static inline void _WDT_CNT_RST(void)
 #endif // _WDT_ENABLE_
 }
 
+// --------------------------------------------------------------------------
 #if defined(MCU_RP2350)
 bool aon_set_time_from_string(const char *p_datetime_str);
 void aon_current_time_print(void);

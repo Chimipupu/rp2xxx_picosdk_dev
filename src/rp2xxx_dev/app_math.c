@@ -11,13 +11,15 @@
 #include "app_math.h"
 #include "muc_rpxxx_util.h"
 
-#define MATH_PI_CALC_TIME   3
-#define FIBONACCI_N         20
-#define INVSQRT_N           7
-#define WIDTH               80
-#define HEIGHT              40
-#define MAX_ITER            1000
+// --------------------------------------------------------------------------
+#define MATH_PI_CALC_TIME     3
+#define FIBONACCI_N           20
+#define INVSQRT_N             7
+#define WIDTH                 80
+#define HEIGHT                40
+#define MAX_ITER              1000
 
+// --------------------------------------------------------------------------
 // 計算精度の表示（期待値:-7497258.185...）
 double app_math_calc_accuracy(void)
 {
@@ -88,6 +90,54 @@ double app_math_pi_calc(uint32_t cnt)
     return pi;
 }
 
+/**
+ * @brief 円周率の計算(スピゴット・アルゴリズム)
+ * @note 整数のみで円周率の各桁を順番に計算
+ */
+void app_math_pi_calc_spigot_show(void)
+{
+#define LOOPS           10
+#define TOTAL_DIGITS    (LOOPS * 4)
+#define PI_BUF_SIZE     ((TOTAL_DIGITS * 10) / 3 + 2)
+
+    int pi[PI_BUF_SIZE];
+    int i, k;
+    int b, d;
+    int c = 0;
+
+    for (i = 0; i < PI_BUF_SIZE; i++)
+    {
+        pi[i] = 2000;
+    }
+
+    for (k = 0; k < LOOPS; k++)
+    {
+        d = 0;
+        i = PI_BUF_SIZE - 1;
+
+        while (i >= 0)
+        {
+            d += pi[i] * 10000;
+            b = 2 * i + 1;
+            pi[i] = d % b;
+            d /= b;
+            if (i > 0) {
+                d *= i;
+            }
+            i--;
+        }
+
+        int val = c + d / 10000;
+        if (k == 0) {
+            printf("%d.%03d", val / 1000, val % 1000);
+        } else {
+            printf("%04d", val);
+        }
+        c = d % 10000;
+    }
+    printf("...\r\n");
+}
+
 // フィボナッチ数列の計算
 uint32_t app_math_fibonacci_calc(uint32_t cnt)
 {
@@ -110,16 +160,8 @@ uint32_t app_math_fibonacci_calc(uint32_t cnt)
 double app_math_goldenratio_calc(void)
 {
     double phi = 0;
-
     phi = (1 + sqrt(5)) / 2.0; // 黄金比の値
-
     return phi;
-}
-
-// ネイピア(マイコンでの計算は無理やから定数出力)
-double app_math_napier_calc(void)
-{
-    return MATH_E;
 }
 
 // 高速逆平方根
@@ -165,23 +207,6 @@ void app_math_prime(uint32_t n)
         }
     }
     printf("\n");
-}
-
-// ガウス・ルジャンドル法で円周率を計算
-void app_math_pi_show(uint32_t n)
-{
-    _DI();
-    uint32_t start_time = time_us_32();
-    _EI();
-
-    double pi = app_math_pi_calc(n);
-
-    _DI();
-    uint32_t end_time = time_us_32();
-    _EI();
-
-    printf("pi = %.15f\n", pi);
-    printf("proc time : %d usec\n", end_time - start_time);
 }
 
 // マンデルブロ集合の描画
@@ -393,9 +418,7 @@ void inverse_sqrt_test(void)
 void app_math_math_test(void)
 {
     uint32_t i,fib;
-    volatile double pi;
     volatile double phi;
-    volatile double napier;
     volatile double invsqrt;
     volatile double result;
 
@@ -408,12 +431,15 @@ void app_math_math_test(void)
     printf("tan(355/226) = %.3f\n", result);
 
     // 円周率π
-    pi = app_math_pi_calc(MATH_PI_CALC_TIME);
+#ifdef CALC_PI_SPIGOT
+    app_math_pi_calc_spigot_show();
+#else
+    volatile double pi = app_math_pi_calc(MATH_PI_CALC_TIME);
     printf("pi = %.15f\n", pi);
+#endif
 
     // ネイピアe
-    napier = app_math_napier_calc();
-    printf("e = %.15f\n", napier);
+    printf("e = %.15f\n", MATH_E);
 
     // 黄金比φ
     phi = app_math_goldenratio_calc();
