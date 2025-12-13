@@ -54,12 +54,12 @@ static void cpu_com_statemachine(uint8_t cpu_no, cpu_com_flame_t *p_flame)
         case CPU_COM_CMD_TEST:
             printf("[DEBUG] RX! CPU COM Test Flame: CPUx = %d, DATA = 0x%04X\n", p_flame->BIT.CPUx, p_flame->BIT.DATA);
 
-            if(p_flame->BIT.DATA == CPU_COM_DATA_TEST)
+            // if(p_flame->BIT.DATA == CPU_COM_DATA_TEST)
             {
                 tx_flame.BIT.CMD = CPU_COM_CMD_RES;
                 tx_flame.BIT.CPUx = cpu_no;
-                tmp = p_flame->BIT.DATA;
-                tmp = ~tmp;
+                tmp = CPU_COM_DATA_TEST;
+                tmp = ~tmp & 0x0000FFFF;
                 tx_flame.BIT.DATA = tmp;
                 cpu_com_tx_flame(&tx_flame);
             }
@@ -126,7 +126,7 @@ void cpu_com_main(uint8_t cpu_no)
         s_idx_cpu_core0_fifo_buf = (s_idx_cpu_core0_fifo_buf + 1) % CPU_FIFO_NUM;
         cpu_com_statemachine(cpu_no, &s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf]);
     } else if(cpu_no == CPU_CORE_1) {
-        s_cpu_core0_fifo_buf[s_idx_cpu_core0_fifo_buf].DWORD = 0;
+        s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf].DWORD = 0;
         cpu_com_rx_flame(&s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
         s_idx_cpu_core1_fifo_buf = (s_idx_cpu_core1_fifo_buf + 1) % CPU_FIFO_NUM;
         cpu_com_statemachine(cpu_no, &s_cpu_core1_fifo_buf[s_idx_cpu_core1_fifo_buf]);
