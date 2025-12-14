@@ -126,34 +126,21 @@ void btn_ex_irq_handler(uint gpio, uint32_t event_mask)
     gpio_set_irq_enabled(PCB_BTN_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, false);
 
     // チャタリング除去(@30ms待機)
-    sleep_ms(30);
+    // sleep_ms(30);
 
-    if (gpio_get(PCB_BTN_PIN) != PORT_OFF) {
-        printf("[Core%d] Button OFF!\n", s_core_num);
-    } else {
-        printf("[Core%d] Button ON!\n", s_core_num);
-    }
+    // NOTE: ボタンはアクティブLOW
+    printf("[Core%d] Button IRQ (Pin Val:%s)\n", s_core_num,
+            (gpio_get(PCB_BTN_PIN) == BTN_OFF) ? "OFF" : "ON");
+#if defined(PCB_WEACT_RP2350A_V10)
+    static uint8_t s_led_pin_val = 0;
+    s_led_pin_val = !s_led_pin_val;
+    gpio_put(PCB_LED_2_PIN,  s_led_pin_val);   // 基板2番目のLED
+#endif
 
     // 割り込み有効
     gpio_set_irq_enabled(PCB_BTN_PIN, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, true);
 }
 #endif
-
-#ifdef TIMER_ALARM_IRQ_ENABLE
-/**
- * @brief タイマー割り込みハンドラ(2000ms)
- * 
- * @param id 
- * @param p_user_data 
- * @return int64_t 
- */
-int64_t alarm_callback(alarm_id_t id, void *p_user_data)
-{
-    _NOP();
-
-    return 0;
-}
-#endif // TIMER_ALARM_IRQ_ENABLE
 
 static void hw_clock_init(void)
 {
@@ -286,11 +273,6 @@ void aon_alarm_handler()
 
 static void hw_timer_init(void)
 {
-#ifdef TIMER_ALARM_IRQ_ENABLE
-    // タイマー割り込み @2000ms
-    add_alarm_in_ms(2000, alarm_callback, NULL, false);
-#endif // TIMER_ALARM_IRQ_ENABLE
-
 #if defined(MCU_RP2350)
     // 64bit AONタイマー スタート
     struct timespec now;

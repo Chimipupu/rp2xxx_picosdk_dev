@@ -175,9 +175,6 @@
 #endif
 #endif //PCB_NEOPIXEL
 
-// [タイマ関連]
-// #define TIMER_ALARM_IRQ_ENABLE
-
 // [WDT関連]
 // #define _WDT_ENABLE_                                // WDT有効マクロ
 
@@ -315,5 +312,8 @@
 
 #define PORT_OFF                0x00
 #define PORT_ON                 0x01
+
+#define BTN_OFF                 0x01
+#define BTN_ON                  0x00  // NOTE: ボタンはアクティブLOW
 
 #endif // PCB_DEF_H
