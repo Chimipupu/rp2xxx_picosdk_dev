@@ -667,7 +667,7 @@ bool tim_irq_handler(repeating_timer_t *p_rt)
 
     // GPIOトグル
     s_pin_val = !s_pin_val;
-    gpio_put(PCB_LED_PIN,  s_pin_val);  // 基板LEDピン
+    gpio_put(PCB_LED_PIN,  s_pin_val); // 基板LEDピン
     gpio_put(PCB_BEEP_PIN, s_pin_val); // 基板BEEP音用ピン
 
     return true;
@@ -713,10 +713,10 @@ static void cmd_beep(dbg_cmd_args_t *p_args)
     if (p_args->argc == 2) {
         duration_us = atoi(p_args->p_argv[1]);
         // 人の可聴域の20Hz~20KHzではない場合はエラー
-        if (duration_us < 50 || duration_us > 50000) {
-            printf("[ERROR] Beep duration must be between 50000us (20Hz) and 50us (20KHz) !!!\n");
-            return;
-        }
+        // if (duration_us < 50 || duration_us > 50000) {
+        //     printf("[ERROR] Beep duration must be between 50000us (20Hz) and 50us (20KHz) !!!\n");
+        //     return;
+        // }
     }
 
     printf("[DEBUG] Beep Sound: T=%d us\n", duration_us);

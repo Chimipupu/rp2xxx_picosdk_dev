@@ -464,7 +464,9 @@ int main()
 
     // クロック初期化
     hw_clock_init();
-    sleep_ms(100);
+    // sleep_ms(100);
+
+    s_core_num = get_core_num();
 
     // DMA初期化
     hw_dma_init();
@@ -504,11 +506,6 @@ int main()
 
     // WDT初期化
     hw_wdt_init();
-
-    // printf("System Clock Frequency is %d Hz\n", clock_get_hz(clk_sys));
-    // printf("USB Clock Frequency is %d Hz\n", clock_get_hz(clk_usb));
-
-    s_core_num = get_core_num();
 
     // CPU間通信 初期化
     cpu_com_init();
