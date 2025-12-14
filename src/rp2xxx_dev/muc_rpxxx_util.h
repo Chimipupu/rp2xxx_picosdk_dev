@@ -38,6 +38,14 @@
 #include "hardware/clocks.h"
 #include "hardware/uart.h"
 // --------------------------------------------------------------------------
+// GPIOの最大本数
+#if defined(PCB_WEACT_RP2350A_V10) || defined(PCB_WEACT_RP2350B)
+// RP2350B (QFN-80)
+#define GPIO_MAX_PIN_NUM        48
+#else
+// RP2350A (QFN-60)
+#define GPIO_MAX_PIN_NUM        30
+#endif
 
 // --------------------------------------------------------------------------
 // レジスタを8/16/32bitでR/Wするマクロ

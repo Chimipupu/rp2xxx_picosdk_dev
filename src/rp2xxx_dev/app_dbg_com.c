@@ -20,10 +20,10 @@
 
 // SDK Include
 #include "pico/version.h"
+#include "pico/time.h"
 #include "hardware/clocks.h"
 #include "hardware/watchdog.h"
 #include "hardware/timer.h"
-#include "pico/time.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
@@ -36,15 +36,7 @@
 #include "cpu_com.h"
 #include "drv_neopixel.h"
 
-// GPIOの最大本数
-#if defined(PCB_WEACT_RP2350A_V10) || defined(PCB_WEACT_RP2350B)
-// RP2350B (QFN-80)
-#define GPIO_MAX_PIN_NUM        48
-#else
-// RP2350A (QFN-60)
-#define GPIO_MAX_PIN_NUM        30
-#endif
-
+// --------------------------------------------------------------------------
 // 期待値: tan(355/226)
 #define TAN_355_226_EXPECTED    -7497258.18532
 
@@ -52,8 +44,13 @@
 #define TIMER_MAX_SECONDS       3600   // 最大1時間
 // タイマーの最大アラーム数
 #define TIMER_MAX_ALARMS        PICO_TIME_DEFAULT_ALARM_POOL_MAX_TIMERS
-
+// --------------------------------------------------------------------------
 extern neopixel_t s_neopixel;
+
+static uint32_t s_rng_buf[256];
+static int get_neopixel_color_from_name(const char* name);
+static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
+static void cmd_beep(dbg_cmd_args_t *p_args);
 
 static void cmd_cls(dbg_cmd_args_t *p_args);
 static void cmd_system(dbg_cmd_args_t *p_args);
@@ -71,18 +68,16 @@ static void cmd_gpio(dbg_cmd_args_t *p_args);
 static void cmd_i2c(dbg_cmd_args_t *p_args);
 static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
-
-static int get_neopixel_color_from_name(const char* name);
-static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
-
-static uint32_t s_rng_buf[256];
+static void cmd_beep(dbg_cmd_args_t *p_args);
 
 // コマンドテーブル
 const dbg_cmd_info_t g_cmd_tbl[] = {
 //  | 短縮/フルコマンド文字列 | コールバック関数 | 最小引数 | 最大引数 | コマンドの説明分 |
-    {"cls", "clear"     ,&cmd_cls,         0,    0,    "Display Clear"},
+    // [システム機能関連]
     {"sys", "sysinfo"   ,&cmd_system,      0,    0,    "Show System Info"},
     {"rst", "reset"     ,&cmd_rst,         0,    0,    "S/W Reset"},
+
+    // [マイコンのペリフェラル機能関連]
     {"reg", "register"  ,&cmd_reg,         3,    4,    "Register R/W. exp(reg #addr r|w bits #val)"},
     {"i2c", "iic"       ,&cmd_i2c,         2,    2,    "I2C Control. exp(i2c port, command)"},
     {"io",  "gpio"      ,&cmd_gpio,        2,    2,    "GPIO Control. exp(pin pin, value)"},
@@ -90,22 +85,20 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
     {"tm",  "timer"     ,&cmd_timer,       0,    1,    "Set timer alarm. exp(tm seconds)"},
     //  RTC ... (RP2040 = H/W RTC, RP2350 = AON Timer)
     {"rt", "rtc"        ,&cmd_rtc,         0,    1,    "RTC. exp(rtc g | rtc s YYYY/MM/DD HH:MM:SS)"},
+    {"bp", "beep"       ,&cmd_beep,        1,    2,    "Beep Sound. exp(bp duration(us))"},
 #if defined(MCU_RP2350)
     {"rng", "random"    ,&cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
     {"sha", "sha256"    ,&cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
 #endif
+
+    // [マイコンの性能関連]
     {"mat", "mathtest"   ,&cmd_mat_test,   0,    0,    "Math Calc Test"},
     {"mct", "multicore"  ,&cmd_mct_test,   0,    0,    "Multi Core CPU Test"},
 };
-
 // コマンドテーブルのコマンド数(const)
 const size_t g_tbl_cmd_num = sizeof(g_cmd_tbl) / sizeof(g_cmd_tbl[0]);
 
-static void cmd_cls(dbg_cmd_args_t *p_args)
-{
-    printf(ANSI_ESC_CLS);
-}
-
+// --------------------------------------------------------------------------
 static void cmd_system(dbg_cmd_args_t *p_args)
 {
     uint8_t i;
@@ -443,12 +436,13 @@ static void cmd_gpio(dbg_cmd_args_t *p_args)
     gpio_init(pin);
     gpio_set_dir(pin, GPIO_OUT);
 
+#if 0
     // GPIO操作の処理時間を計測
     volatile uint32_t start_time = time_us_32();
     gpio_put(pin, value);
     volatile uint32_t end_time = time_us_32();
-
     printf("GPIO %d set to %d (proc time: %u us)\n\n", pin, value, end_time - start_time);
+#endif
 }
 
 /**
@@ -651,4 +645,66 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
             return;
         }
     }
+}
+
+/**
+ * @brief タイマー割り込みハンドラ
+ * 
+ * @param id アラームID
+ * @param p_user_data ユーザーデータポインタ
+ * @return int64_t 次のアラームまでの時間(マイクロ秒)
+ */
+int64_t tim_irq_handler(alarm_id_t id, void *p_user_data)
+{
+    // GPIOトグル
+    gpio_put(PCB_LED_PIN, !gpio_get(PCB_LED_PIN));   // 基板LEDピン
+    gpio_put(PCB_BEEP_PIN, !gpio_get(PCB_BEEP_PIN)); // 基板BEEP音用ピン
+    return 0;
+}
+
+/**
+ * @brief Beep音初期化関数
+ * @note Beep音 ... タイマー割り込みでGPIOをトグルして音を鳴らす
+ * @param duration_us 周期(us)
+ */
+static void hw_init_beep_sound(uint32_t duration_us)
+{
+    static bool is_beep_configured = false;
+
+    if(is_beep_configured == false) {
+        // BEEP音を鳴らすGPIOの初期化
+        gpio_init(PCB_BEEP_PIN);
+        gpio_set_dir(PCB_BEEP_PIN, GPIO_OUT);
+
+#if 1
+        // (DEBUG) デバッグ用に基板のLEDを使う
+        gpio_init(PCB_LED_PIN);
+        gpio_set_dir(PCB_LED_PIN, GPIO_OUT);
+#endif
+        is_beep_configured = true;
+    } else {
+       // 引数の周期(us)からタイマー割り込みを設定
+        add_alarm_in_us(duration_us, tim_irq_handler, NULL, false);
+    }
+}
+
+/**
+ * @brief Beep音コマンド
+ * @param p_args 周期(us)
+ */
+static void cmd_beep(dbg_cmd_args_t *p_args)
+{
+    uint32_t duration_us;
+
+    if (p_args->argc == 2) {
+        duration_us = atoi(p_args->p_argv[1]);
+        // 人の可聴域の20Hz~20KHzではない場合はエラー
+        if (duration_us < 50 || duration_us > 50000) {
+            printf("[ERROR] Beep duration must be between 50000us (20Hz) and 50us (20KHz) !!!\n");
+            return;
+        }
+    }
+
+    printf("[DEBUG] Beep Sound: T=%d us\n", duration_us);
+    hw_init_beep_sound(duration_us);
 }
