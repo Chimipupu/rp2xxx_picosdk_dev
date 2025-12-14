@@ -211,6 +211,7 @@ static void cpu_core_1_app_main(void)
     // デバッグモニタ初期化
     g_dbgc_config.p_cmd_tbl = &g_cmd_tbl[0];
     g_dbgc_config.total_cmd = g_tbl_cmd_num;
+    printf(ANSI_ESC_CLEAR_ALL);
     dbg_com_init(&g_dbgc_config);
 #endif // DEBUG_DBG_COM_USE
 

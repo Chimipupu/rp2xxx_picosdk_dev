@@ -83,7 +83,7 @@
 #endif //PCB_NAME
 
 // [基板固有定義]
-#define PCB_BEEP_PIN              24   // BEEP音出力ピン
+#define PCB_BEEP_PIN              22   // BEEP音出力ピン
 
 #if defined(PCB_PICO2W)
     #define PCB_LED_PIN           CYW43_WL_GPIO_LED_PIN        // Raspberry Pi Pico 2 WのLEDピン

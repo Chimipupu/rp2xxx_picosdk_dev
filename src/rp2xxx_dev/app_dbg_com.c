@@ -50,7 +50,7 @@ extern neopixel_t s_neopixel;
 static uint32_t s_rng_buf[256];
 static int get_neopixel_color_from_name(const char* name);
 static int parse_hex_color(const char *p_str, uint8_t *p_r, uint8_t *p_g, uint8_t *p_b);
-static void cmd_beep(dbg_cmd_args_t *p_args);
+static void hw_init_beep_sound(uint32_t duration_us);
 
 static void cmd_cls(dbg_cmd_args_t *p_args);
 static void cmd_system(dbg_cmd_args_t *p_args);
@@ -654,12 +654,23 @@ static void cmd_neopixel(dbg_cmd_args_t *p_args)
  * @param p_user_data ユーザーデータポインタ
  * @return int64_t 次のアラームまでの時間(マイクロ秒)
  */
-int64_t tim_irq_handler(alarm_id_t id, void *p_user_data)
+
+/**
+ * @brief インターバルタイマー割り込みハンドラ
+ * 
+ * @param rt インターバルタイマー構造体ポインタ
+ * @return true 継続
+ */
+bool tim_irq_handler(repeating_timer_t *p_rt)
 {
+    static uint8_t s_pin_val = 0;
+
     // GPIOトグル
-    gpio_put(PCB_LED_PIN, !gpio_get(PCB_LED_PIN));   // 基板LEDピン
-    gpio_put(PCB_BEEP_PIN, !gpio_get(PCB_BEEP_PIN)); // 基板BEEP音用ピン
-    return 0;
+    s_pin_val = !s_pin_val;
+    gpio_put(PCB_LED_PIN,  s_pin_val);  // 基板LEDピン
+    gpio_put(PCB_BEEP_PIN, s_pin_val); // 基板BEEP音用ピン
+
+    return true;
 }
 
 /**
@@ -670,6 +681,7 @@ int64_t tim_irq_handler(alarm_id_t id, void *p_user_data)
 static void hw_init_beep_sound(uint32_t duration_us)
 {
     static bool is_beep_configured = false;
+    static repeating_timer_t  s_timer_out;
 
     if(is_beep_configured == false) {
         // BEEP音を鳴らすGPIOの初期化
@@ -682,9 +694,11 @@ static void hw_init_beep_sound(uint32_t duration_us)
         gpio_set_dir(PCB_LED_PIN, GPIO_OUT);
 #endif
         is_beep_configured = true;
-    } else {
+    }
+
+    if(is_beep_configured == true) {
        // 引数の周期(us)からタイマー割り込みを設定
-        add_alarm_in_us(duration_us, tim_irq_handler, NULL, false);
+        add_repeating_timer_us(duration_us, tim_irq_handler, NULL, &s_timer_out);
     }
 }
 
