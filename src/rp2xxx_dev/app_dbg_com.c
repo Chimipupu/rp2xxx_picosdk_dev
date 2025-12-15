@@ -743,7 +743,7 @@ static void cmd_beep(dbg_cmd_args_t *p_args)
  */
 static void cmd_eeprom(dbg_cmd_args_t *p_args)
 {
-    uint8_t page;
+    uint16_t page;
     uint16_t addr;
     uint8_t val;
     uint8_t buf[E2P_PAGE_SIZE] = {0};
@@ -763,19 +763,22 @@ static void cmd_eeprom(dbg_cmd_args_t *p_args)
         return;
     }
 
-    // [シーケンシャルリード
+    // シーケンシャルリード(page単位)
     // NOTE: 「e2p page 0 r」は「EEPROMのページ0からシーケンシャルリード」
     if (strcmp(p_args->p_argv[1], "page") == 0) {
         if (p_args->argc != 4) {
             printf("Usage: e2p page <page_num> r\n");
             return;
         }
-        page = (uint8_t)atoi(p_args->p_argv[2]);
+        page = (uint16_t)atoi(p_args->p_argv[2]);
+        if(page >= E2P_PAGE_CNT) {
+            printf("Error: Invalid page number. Must be Page 0 to Page %d!!!\n", E2P_PAGE_CNT - 1);
+            return;
+        }
         if (strcmp(p_args->p_argv[3], "r") != 0) {
             printf("Error: Invalid command. Use 'r' for read.\n");
             return;
         }
-        // シーケンシャルリード
         addr = page * E2P_PAGE_SIZE;
         e2p_read_buffer(&e2p_config, addr, &buf[0], E2P_PAGE_SIZE);
         printf("[EEPROM] E2P Sequential Read Page %d:\n", page);
