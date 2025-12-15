@@ -100,7 +100,7 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
 #endif
 
 #ifdef E2P_USE
-    {"e2p", "eeprom"    ,&cmd_eeprom,      3,    4,    "24CXXX EEPROM R/W. exp(e2p page r, e2p #addr r, e2p #addr w val)"},
+    {"e2p", "eeprom"    ,&cmd_eeprom,      3,    4,    "24CXXX EEPROM R/W. exp(e2p page #page_num r, e2p #addr r, e2p #addr w val)"},
 #endif
 
     // [マイコンの性能関連]
@@ -758,50 +758,52 @@ static void cmd_eeprom(dbg_cmd_args_t *p_args)
         s_is_e2p_init = true;
     }
 
-    if (p_args->argc < 4 || p_args->argc > 5) {
-        printf("Usage: e2p page r | e2p #addr r | e2p #addr w val\n");
+    if (p_args->argc < 3 || p_args->argc > 4) {
+        printf("Usage: e2p page #page_num r | e2p #addr r | e2p #addr w val\n");
         return;
     }
 
-    // 第一引数がpage
+    // [シーケンシャルリード
+    // NOTE: 「e2p page 0 r」は「EEPROMのページ0からシーケンシャルリード」
     if (strcmp(p_args->p_argv[1], "page") == 0) {
-        page = atoi(p_args->p_argv[2]);
-        if (strcmp(p_args->p_argv[3], "r") == 0) {
-            // ページ読み取り
-            memset(buf, 0, sizeof(buf));
-            addr = page * E2P_PAGE_SIZE;
-            printf("[EEPROM] E2P Sequential Read: Page %d (Addr: 0x%04X)\n", page, addr);
-            e2p_read_buffer(&e2p_config, addr, &buf[0], E2P_PAGE_SIZE);
-            show_mem_dump((uint32_t)&buf[0], E2P_PAGE_SIZE);
-        } else {
-            printf("Error: Invalid command. Usage: e2p page r\n");
+        if (p_args->argc != 4) {
+            printf("Usage: e2p page <page_num> r\n");
+            return;
         }
+        page = (uint8_t)atoi(p_args->p_argv[2]);
+        if (strcmp(p_args->p_argv[3], "r") != 0) {
+            printf("Error: Invalid command. Use 'r' for read.\n");
+            return;
+        }
+        // シーケンシャルリード
+        addr = page * E2P_PAGE_SIZE;
+        e2p_read_buffer(&e2p_config, addr, &buf[0], E2P_PAGE_SIZE);
+        printf("[EEPROM] E2P Sequential Read Page %d:\n", page);
+        show_mem_dump((uint32_t)buf, E2P_PAGE_SIZE);
         return;
     }
 
-    // 第二引数がアドレス
+    // [ランダムリード orライト「e2p #addr r|w」]
     if (sscanf(p_args->p_argv[1], "#%x", &addr) != 1) {
         printf("Error: Invalid address format. Use #HEX (e.g. #00FF)\n");
         return;
     }
 
-    // 第三引数がr/w
-    char rw = p_args->p_argv[2][0];
-    if (rw == 'r') {
+    if (strcmp(p_args->p_argv[2], "r") == 0) {
         // ランダムリード
         e2p_read_byte(&e2p_config, addr, &val);
         printf("[EEPROM] E2P Random Read @ 0x%04X = 0x%02X\n", addr, val);
-    } else if (rw == 'w') {
+    } else if (strcmp(p_args->p_argv[2], "w") == 0) {
         // 書き込み
         if (p_args->argc != 4) {
             printf("Error: Write usage: e2p #ADDR w VAL\n");
             return;
         }
         val = (uint8_t)atoi(p_args->p_argv[3]);
-        e2p_write_buffer(&e2p_config, addr, &val, 1);
+        e2p_write_byte(&e2p_config, addr, val);
         printf("[EEPROM] E2P Write @ 0x%04X = 0x%02X\n", addr, val);
     } else {
-        printf("Error: 2nd arg must be 'r' or 'w'\n");
+        printf("Error: Invalid command. Use 'r' for read or 'w' for write.\n");
     }
 #endif
 }
