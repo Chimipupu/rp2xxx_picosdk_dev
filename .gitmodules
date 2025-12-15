@@ -4,3 +4,6 @@
 [submodule "src/rp2xxx_dev/middle/dbg_com"]
 	path = src/rp2xxx_dev/middle/dbg_com
 	url = https://github.com/Chimipupu/dbg_com.git
+[submodule "src/rp2xxx_dev/drv/drv_eeprom_24cxxx"]
+	path = src/rp2xxx_dev/drv/drv_eeprom_24cxxx
+	url = https://github.com/Chimipupu/drv_eeprom_24cxxx.git

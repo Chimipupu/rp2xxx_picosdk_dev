@@ -44,6 +44,7 @@ add_executable(rp2xxx_dev
             hw_init.c
             muc_rpxxx_util.c
             ${CMAKE_CURRENT_LIST_DIR}/middle/dbg_com/dbg_com.c
+            ${CMAKE_CURRENT_LIST_DIR}/drv/drv_eeprom_24cxxx/drv_eeprom_24cxxx.c
             )
 
 pico_set_program_name(rp2xxx_dev "rp2xxx_dev")
@@ -102,6 +103,7 @@ target_link_libraries(rp2xxx_dev
 target_include_directories(rp2xxx_dev PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/middle/dbg_com
+        ${CMAKE_CURRENT_LIST_DIR}/drv/drv_eeprom_24cxxx
 )
 
 # Add any user requested libraries

@@ -27,15 +27,19 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 
+// My App Include
+#include "cpu_com.h"
+#include "drv_neopixel.h"
 #include "muc_rpxxx_util.h"
 #include "pcb_def.h"
 #include "hw_init.h"
 #include "app_main.h"
 #include "app_math.h"
-#include "muc_rpxxx_util.h"
-#include "cpu_com.h"
-#include "drv_neopixel.h"
 
+#define E2P_USE
+#ifdef E2P_USE
+#include "drv_eeprom_24cxxx.h"
+#endif
 // --------------------------------------------------------------------------
 // 期待値: tan(355/226)
 #define TAN_355_226_EXPECTED    -7497258.18532
@@ -70,6 +74,10 @@ static void cmd_reg(dbg_cmd_args_t *p_args);
 static void cmd_neopixel(dbg_cmd_args_t *p_args);
 static void cmd_beep(dbg_cmd_args_t *p_args);
 
+#ifdef E2P_USE
+static void cmd_eeprom(dbg_cmd_args_t *p_args);
+#endif
+
 // コマンドテーブル
 const dbg_cmd_info_t g_cmd_tbl[] = {
 //  | 短縮/フルコマンド文字列 | コールバック関数 | 最小引数 | 最大引数 | コマンドの説明分 |
@@ -89,6 +97,10 @@ const dbg_cmd_info_t g_cmd_tbl[] = {
 #if defined(MCU_RP2350)
     {"rng", "random"    ,&cmd_rng,         0,    1,    "Generate 32bit True Random Number, using H/W TRNG"},
     {"sha", "sha256"    ,&cmd_sha,         0,    1,    "Calc SHA-256 Hash, using H/W Accelerator"},
+#endif
+
+#ifdef E2P_USE
+    {"e2p", "eeprom"    ,&cmd_eeprom,      3,    4,    "24CXXX EEPROM R/W. exp(e2p page r, e2p #addr r, e2p #addr w val)"},
 #endif
 
     // [マイコンの性能関連]
@@ -721,4 +733,75 @@ static void cmd_beep(dbg_cmd_args_t *p_args)
 
     printf("[DEBUG] Beep Sound: T=%d us\n", duration_us);
     hw_init_beep_sound(duration_us);
+}
+
+#ifdef E2P_USE
+/**
+ * @brief EEPROMコマンド関数
+ * @note exp(e2p page r, e2p #addr r, e2p #addr w val)
+ * @param p_args コマンド引数の構造体ポインタ
+ */
+static void cmd_eeprom(dbg_cmd_args_t *p_args)
+{
+    uint8_t page;
+    uint16_t addr;
+    uint8_t val;
+    uint8_t buf[E2P_PAGE_SIZE] = {0};
+    e2p_24cxxx_config_t e2p_config;
+    static bool s_is_e2p_init = false;
+
+    // EEPROMドライバ初期化
+    if(s_is_e2p_init == false) {
+        e2p_config.p_i2c = i2c0;
+        e2p_config.addr = E2P_I2C_ADDR_0x50;
+        e2p_init(&e2p_config);
+        s_is_e2p_init = true;
+    }
+
+    if (p_args->argc < 4 || p_args->argc > 5) {
+        printf("Usage: e2p page r | e2p #addr r | e2p #addr w val\n");
+        return;
+    }
+
+    // 第一引数がpage
+    if (strcmp(p_args->p_argv[1], "page") == 0) {
+        page = atoi(p_args->p_argv[2]);
+        if (strcmp(p_args->p_argv[3], "r") == 0) {
+            // ページ読み取り
+            memset(buf, 0, sizeof(buf));
+            addr = page * E2P_PAGE_SIZE;
+            printf("[EEPROM] E2P Sequential Read: Page %d (Addr: 0x%04X)\n", page, addr);
+            e2p_read_buffer(&e2p_config, addr, &buf[0], E2P_PAGE_SIZE);
+            show_mem_dump((uint32_t)&buf[0], E2P_PAGE_SIZE);
+        } else {
+            printf("Error: Invalid command. Usage: e2p page r\n");
+        }
+        return;
+    }
+
+    // 第二引数がアドレス
+    if (sscanf(p_args->p_argv[1], "#%x", &addr) != 1) {
+        printf("Error: Invalid address format. Use #HEX (e.g. #00FF)\n");
+        return;
+    }
+
+    // 第三引数がr/w
+    char rw = p_args->p_argv[2][0];
+    if (rw == 'r') {
+        // ランダムリード
+        e2p_read_byte(&e2p_config, addr, &val);
+        printf("[EEPROM] E2P Random Read @ 0x%04X = 0x%02X\n", addr, val);
+    } else if (rw == 'w') {
+        // 書き込み
+        if (p_args->argc != 4) {
+            printf("Error: Write usage: e2p #ADDR w VAL\n");
+            return;
+        }
+        val = (uint8_t)atoi(p_args->p_argv[3]);
+        e2p_write_buffer(&e2p_config, addr, &val, 1);
+        printf("[EEPROM] E2P Write @ 0x%04X = 0x%02X\n", addr, val);
+    } else {
+        printf("Error: 2nd arg must be 'r' or 'w'\n");
+    }
+#endif
 }
