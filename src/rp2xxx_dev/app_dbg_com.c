@@ -750,17 +750,17 @@ static void cmd_eeprom(dbg_cmd_args_t *p_args)
     e2p_24cxxx_config_t e2p_config;
     static bool s_is_e2p_init = false;
 
+    if (p_args->argc < 3 || p_args->argc > 4) {
+        printf("Usage: e2p page #page_num r | e2p #addr r | e2p #addr w val\n");
+        return;
+    }
+
     // EEPROMドライバ初期化
     if(s_is_e2p_init == false) {
         e2p_config.p_i2c = i2c0;
         e2p_config.addr = E2P_I2C_ADDR_0x50;
         e2p_init(&e2p_config);
         s_is_e2p_init = true;
-    }
-
-    if (p_args->argc < 3 || p_args->argc > 4) {
-        printf("Usage: e2p page #page_num r | e2p #addr r | e2p #addr w val\n");
-        return;
     }
 
     // シーケンシャルリード(page単位)
